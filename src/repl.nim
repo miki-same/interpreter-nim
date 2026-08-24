@@ -1,19 +1,19 @@
 import lexer
 import token
 
-const PROMPT=">> "
+const PROMPT = ">> "
 
-proc start*()=
+proc start*() =
     while true:
         stdout.write(PROMPT)
-        let scanned=stdin.readLine
-        if len(scanned)==0:
+        let scanned = stdin.readLine
+        if len(scanned) == 0:
             return
 
-        var lexer=newLexer(scanned)
+        var lexer = newLexer(scanned)
 
         while true:
-            let token=lexer.nextToken()
+            let token = lexer.nextToken()
             if token.kind == TokenType.EOF:
                 break
 
