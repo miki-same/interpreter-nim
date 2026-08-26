@@ -15,12 +15,12 @@ suite "Program.display":
                 name: Expression(
                     kind: ExIdentifier,
                     token: Token(kind: Ident, literal: "myVar"),
-                    value: "myVar",
+                    idValue: "myVar",
                 ),
                 value: Expression(
                     kind: ExIdentifier,
                     token: Token(kind: Ident, literal: "anotherVar"),
-                    value: "anotherVar",
+                    idValue: "anotherVar",
                 ),
             ),
         ])
@@ -34,7 +34,7 @@ suite "Program.display":
                 returnValue: Expression(
                     kind: ExIdentifier,
                     token: Token(kind: Ident, literal: "anotherVar"),
-                    value: "anotherVar",
+                    idValue: "anotherVar",
                 ),
             ),
         ])
@@ -61,7 +61,7 @@ let foobar = 838383;
         for i, expectedName in want:
             checkpoint("statement[" & $i & "]")
             check program.statements[i].kind == StLet
-            check program.statements[i].name.value == expectedName
+            check program.statements[i].name.idValue == expectedName
 
     test "parses return statements":
         let input = """
@@ -85,3 +85,41 @@ return 993322;
             checkpoint("statement[" & $i & "]")
             check statement.kind == StReturn
             check statement.tokenLiteral() == "return"
+
+    test "parses an identifier expression statement":
+        let input = "foobar;"
+
+        var lexer = newLexer(input)
+        var parser = newParser(lexer)
+        let parsed = parser.parseProgram()
+
+        if parsed.isErr:
+            checkpoint("parse error: " & parsed.error)
+        require parsed.isOk
+
+        let program = parsed.value
+        require program.statements.len == 1
+        require program.statements[0].kind == StExpression
+
+        let expression = program.statements[0].expression
+        check expression.kind == ExIdentifier
+        check expression.idValue == "foobar"
+
+    test "parses an integer literal expression statement":
+        let input = "5;"
+
+        var lexer = newLexer(input)
+        var parser = newParser(lexer)
+        let parsed = parser.parseProgram()
+
+        if parsed.isErr:
+            checkpoint("parse error: " & parsed.error)
+        require parsed.isOk
+
+        let program = parsed.value
+        require program.statements.len == 1
+        require program.statements[0].kind == StExpression
+
+        let expression = program.statements[0].expression
+        check expression.kind == ExIntegerLiteral
+        check expression.intValue == "5"

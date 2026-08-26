@@ -3,15 +3,19 @@ import token
 type StatementKind* = enum
     StLet
     StReturn
+    StExpression
 
 type ExpressionKind* = enum
     ExIdentifier
+    ExIntegerLiteral
 
 type Expression* = object
+    token*: Token
     case kind*: ExpressionKind
     of ExIdentifier:
-        token*: Token
-        value*: string
+        idValue*: string
+    of ExIntegerLiteral:
+        intValue*:string
 
 proc tokenLiteral*(self: Expression): string =
     return ""
@@ -19,7 +23,9 @@ proc tokenLiteral*(self: Expression): string =
 proc display(self: Expression): string =
     case self.kind:
     of ExIdentifier:
-        return self.value
+        return self.idValue
+    of ExIntegerLiteral:
+        return self.intValue
 
 type Statement* = object
     case kind*: StatementKind
@@ -28,6 +34,8 @@ type Statement* = object
         value*: Expression
     of StReturn:
         returnValue*: Expression
+    of StExpression:
+        expression*: Expression
 
 
 proc tokenLiteral*(self: Statement): string =
@@ -36,6 +44,8 @@ proc tokenLiteral*(self: Statement): string =
             return "let"
         of StReturn:
             return "return"
+        of StExpression:
+            return self.expression.tokenLiteral()
 
 proc display(self: Statement): string =
     case self.kind:
@@ -45,6 +55,8 @@ proc display(self: Statement): string =
     of StReturn:
         result.add(self.tokenLiteral & " ")
         result.add(self.returnValue.display())
+    of StExpression:
+        result.add(self.expression.display())
     result.add(";")
 
 type Program* = object
@@ -57,3 +69,12 @@ proc tokenLiteral*(self: Program): string =
 proc display*(self: Program): string =
     for statement in self.statements:
         result.add(statement.display())
+
+type Precedence* = enum 
+    Lowest,
+    Equals,
+    LessGreater,
+    Sum,
+    Product,
+    Prefix,
+    Call
