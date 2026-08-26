@@ -4,6 +4,7 @@ import lexer
 import token
 import ast
 import std/tables
+import std/strutils
 
 type
     Parser* = object
@@ -115,7 +116,7 @@ proc parseIdentifier(self:Parser):Expression=
     return Expression(kind:ExIdentifier,token:self.curToken,idValue:self.curToken.literal)
 
 proc parseIntegerLiteral(self:Parser):Expression=
-    return Expression(kind:ExIntegerLiteral,token:self.curToken,intValue:self.curToken.literal)
+    return Expression(kind:ExIntegerLiteral,token:self.curToken,intValue:self.curToken.literal.parseInt)
 
 proc newParser*(lexer: Lexer): Parser =
     var parser = Parser(lexer: lexer)

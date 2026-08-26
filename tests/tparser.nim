@@ -122,4 +122,4 @@ return 993322;
 
         let expression = program.statements[0].expression
         check expression.kind == ExIntegerLiteral
-        check expression.intValue == "5"
+        check expression.intValue == 5

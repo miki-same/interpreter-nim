@@ -15,7 +15,7 @@ type Expression* = object
     of ExIdentifier:
         idValue*: string
     of ExIntegerLiteral:
-        intValue*:string
+        intValue*:int
 
 proc tokenLiteral*(self: Expression): string =
     return ""
@@ -25,7 +25,7 @@ proc display(self: Expression): string =
     of ExIdentifier:
         return self.idValue
     of ExIntegerLiteral:
-        return self.intValue
+        return $self.intValue
 
 type Statement* = object
     case kind*: StatementKind
