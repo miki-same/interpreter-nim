@@ -3,6 +3,43 @@ import std/unittest
 import ../src/lexer
 import ../src/parser
 import ../src/ast
+import ../src/token
+
+
+suite "Program.display":
+
+    test "displays a let statement":
+        let program = Program(statements: @[
+            Statement(
+                kind: StLet,
+                name: Expression(
+                    kind: ExIdentifier,
+                    token: Token(kind: Ident, literal: "myVar"),
+                    value: "myVar",
+                ),
+                value: Expression(
+                    kind: ExIdentifier,
+                    token: Token(kind: Ident, literal: "anotherVar"),
+                    value: "anotherVar",
+                ),
+            ),
+        ])
+
+        check program.display() == "let myVar = anotherVar;"
+
+    test "displays a return statement":
+        let program = Program(statements: @[
+            Statement(
+                kind: StReturn,
+                returnValue: Expression(
+                    kind: ExIdentifier,
+                    token: Token(kind: Ident, literal: "anotherVar"),
+                    value: "anotherVar",
+                ),
+            ),
+        ])
+
+        check program.display() == "return anotherVar;"
 
 
 suite "Parser.parseProgram":
