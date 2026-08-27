@@ -147,5 +147,71 @@ return 993322;
 
             let expression = program.statements[0].expression
             check expression.kind == PrefixExpression
-            check expression.operator == testCase.operator
+            check expression.prefOperator == testCase.operator
             check program.display() == testCase.displayed
+
+    test "parses infix expressions":
+        let cases = [
+            (input: "5 + 5", operator: "+"),
+            (input: "5 - 5", operator: "-"),
+            (input: "5 * 5", operator: "*"),
+            (input: "5 / 5", operator: "/"),
+            (input: "5 > 5", operator: ">"),
+            (input: "5 < 5", operator: "<"),
+            (input: "5 == 5", operator: "=="),
+            (input: "5 != 5", operator: "!="),
+        ]
+
+        for testCase in cases:
+            checkpoint("input: " & testCase.input)
+
+            var lexer = newLexer(testCase.input)
+            var parser = newParser(lexer)
+            let parsed = parser.parseProgram()
+
+            if parsed.isErr:
+                checkpoint("parse error: " & parsed.error)
+            require parsed.isOk
+
+            let program = parsed.value
+            require program.statements.len == 1
+            require program.statements[0].kind == StExpression
+
+            let expression = program.statements[0].expression
+            require expression.kind == InfixExpression
+            check expression.infOperator == testCase.operator
+            require expression.infLeft.kind == ExIntegerLiteral
+            check expression.infLeft.intValue == 5
+            require expression.infRight.kind == ExIntegerLiteral
+            check expression.infRight.intValue == 5
+
+    test "respects operator precedence":
+        let cases = [
+            (input: "-a * b", displayed: "((-a)*b);"),
+            (input: "!-a", displayed: "(!(-a));"),
+            (input: "a + b + c", displayed: "((a+b)+c);"),
+            (input: "a + b - c", displayed: "((a+b)-c);"),
+            (input: "a * b * c", displayed: "((a*b)*c);"),
+            (input: "a * b / c", displayed: "((a*b)/c);"),
+            (input: "a + b / c", displayed: "(a+(b/c));"),
+            (input: "a + b * c + d / e - f",
+                displayed: "(((a+(b*c))+(d/e))-f);"),
+            (input: "3 + 4; -5 * 5", displayed: "(3+4);((-5)*5);"),
+            (input: "5 > 4 == 3 < 4", displayed: "((5>4)==(3<4));"),
+            (input: "5 < 4 != 3 > 4", displayed: "((5<4)!=(3>4));"),
+            (input: "3 + 4 * 5 == 3 * 1 + 4 * 5",
+                displayed: "((3+(4*5))==((3*1)+(4*5)));"),
+        ]
+
+        for testCase in cases:
+            checkpoint("input: " & testCase.input)
+
+            var lexer = newLexer(testCase.input)
+            var parser = newParser(lexer)
+            let parsed = parser.parseProgram()
+
+            if parsed.isErr:
+                checkpoint("parse error: " & parsed.error)
+            require parsed.isOk
+
+            check parsed.value.display() == testCase.displayed

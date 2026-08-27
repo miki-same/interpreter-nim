@@ -6,6 +6,27 @@ import ast
 import std/tables
 import std/strutils
 
+proc getPrecedence(token: Token): Precedence =
+    case token.kind:
+    of Eq:
+        result = Equals
+    of NotEq:
+        result = Equals
+    of Lt:
+        result = LessGreater
+    of Gt:
+        result = LessGreater
+    of Plus:
+        result = Sum
+    of Minus:
+        result = Sum
+    of Slash:
+        result = Product
+    of Asterisk:
+        result = Product
+    else:
+        result = Lowest
+
 type
     Parser* = object
         lexer: Lexer
@@ -14,8 +35,14 @@ type
         prefixParseFns: Table[TokenType, PrefixParseFn]
         infixParseFns: Table[TokenType, InfixParseFn]
 
-    InfixParseFn* = proc(left: var Expression): Result[Expression,string]
-    PrefixParseFn* = proc(self: var Parser): Result[Expression,string]
+    InfixParseFn* = proc(self: var Parser, left: Expression): Result[Expression, string]
+    PrefixParseFn* = proc(self: var Parser): Result[Expression, string]
+
+proc peekPrecedence(self: Parser): Precedence =
+    return getPrecedence(self.peekToken)
+
+proc curPrecedence(self: Parser): Precedence =
+    return getPrecedence(self.curToken)
 
 proc registerPrefix(self: var Parser, kind: TokenType, fn: PrefixParseFn) =
     self.prefixParseFns[kind] = fn
@@ -74,7 +101,16 @@ proc parseExpression(self: var Parser, precedence: Precedence): Result[
     if not(self.curToken.kind in self.prefixParseFns):
         return err("invalid token type")
     let prefix = self.prefixParseFns[self.curToken.kind]
-    let leftExp = ?prefix(self)
+    var leftExp = ?prefix(self)
+
+    while not self.peekTokenIs(SemiColon) and precedence < self.peekPrecedence():
+        if not (self.peekToken.kind in self.infixParseFns):
+            return err("invalid token type")
+        let infix = self.infixParseFns[self.peekToken.kind]
+
+        self.nextToken()
+
+        leftExp = ?self.infix(leftExp)
 
     return ok(leftExp)
 
@@ -117,20 +153,31 @@ proc parseProgram*(self: var Parser): Result[Program, string] =
 
     return ok(program)
 
-proc parseIdentifier(self:var Parser): Result[Expression,string] =
+proc parseIdentifier(self: var Parser): Result[Expression, string] =
     return ok(Expression(kind: ExIdentifier, token: self.curToken,
             idValue: self.curToken.literal))
 
-proc parseIntegerLiteral(self:var Parser): Result[Expression,string] =
+proc parseIntegerLiteral(self: var Parser): Result[Expression, string] =
     return ok(Expression(kind: ExIntegerLiteral, token: self.curToken,
             intValue: self.curToken.literal.parseInt))
 
-proc parsePrefixExpression(self: var Parser): Result[Expression,string] =
+proc parsePrefixExpression(self: var Parser): Result[Expression, string] =
     var expression = Expression(kind: PrefixExpression, token: self.curToken,
-            operator: self.curToken.literal)
+            prefOperator: self.curToken.literal)
 
     self.nextToken()
-    expression.right = ?self.parseExpression(Prefix)
+    expression.prefRight = ?self.parseExpression(Prefix)
+
+    return ok(expression)
+
+proc parseInfixExpression(self: var Parser, left: Expression): Result[
+        Expression, string] =
+    var expression = Expression(kind: InfixExpression, token: self.curToken,
+            infOperator: self.curToken.literal, infLeft: left)
+
+    let precedence = self.curPrecedence()
+    self.nextToken()
+    expression.infRight = ?self.parseExpression(precedence)
 
     return ok(expression)
 
@@ -143,6 +190,15 @@ proc newParser*(lexer: Lexer): Parser =
     parser.registerPrefix(Bang, parsePrefixExpression)
     parser.registerPrefix(Minus, parsePrefixExpression)
 
+    parser.infixParseFns = initTable[TokenType, InfixParseFn]()
+    parser.registerInfix(Plus, parseInfixExpression)
+    parser.registerInfix(Minus, parseInfixExpression)
+    parser.registerInfix(Slash, parseInfixExpression)
+    parser.registerInfix(Asterisk, parseInfixExpression)
+    parser.registerInfix(Eq, parseInfixExpression)
+    parser.registerInfix(NotEq, parseInfixExpression)
+    parser.registerInfix(Lt, parseInfixExpression)
+    parser.registerInfix(Gt, parseInfixExpression)
 
     parser.nextToken()
     parser.nextToken()

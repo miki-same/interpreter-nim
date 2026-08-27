@@ -9,6 +9,7 @@ type ExpressionKind* = enum
     ExIdentifier
     ExIntegerLiteral
     PrefixExpression
+    InfixExpression
 
 type
     ExpressionObject* = object
@@ -19,8 +20,12 @@ type
         of ExIntegerLiteral:
             intValue*: int
         of PrefixExpression:
-            operator*: string
-            right*: Expression
+            prefOperator*: string
+            prefRight*: Expression
+        of InfixExpression:
+            infOperator*: string
+            infLeft*: Expression
+            infRight*: Expression
     Expression* = ref ExpressionObject
 
 proc tokenLiteral*(self: Expression): string =
@@ -34,8 +39,14 @@ proc display(self: Expression): string =
         return $self.intValue
     of PrefixExpression:
         result.add("(")
-        result.add(self.operator)
-        result.add(self.right.display())
+        result.add(self.prefOperator)
+        result.add(self.prefRight.display())
+        result.add(")")
+    of InfixExpression:
+        result.add("(")
+        result.add(self.infLeft.display())
+        result.add(self.infOperator)
+        result.add(self.infRight.display())
         result.add(")")
 
 type Statement* = object
