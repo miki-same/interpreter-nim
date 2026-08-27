@@ -11,17 +11,17 @@ type
         lexer: Lexer
         curToken: Token
         peekToken: Token
-        prefixParseFns:Table[TokenType,PrefixParseFn]
-        infixParseFns:Table[TokenType,InfixParseFn]
+        prefixParseFns: Table[TokenType, PrefixParseFn]
+        infixParseFns: Table[TokenType, InfixParseFn]
 
-    InfixParseFn* =proc(left:ast.Expression):ast.Expression
-    PrefixParseFn=proc(self:Parser):ast.Expression
+    InfixParseFn* = proc(left: var Expression): Result[Expression,string]
+    PrefixParseFn* = proc(self: var Parser): Result[Expression,string]
 
-proc registerPrefix(self:var Parser,kind:TokenType,fn:PrefixParseFn)=
-    self.prefixParseFns[kind] =fn
+proc registerPrefix(self: var Parser, kind: TokenType, fn: PrefixParseFn) =
+    self.prefixParseFns[kind] = fn
 
-proc registerInfix(self:var Parser,kind:TokenType,fn:InfixParseFn)=
-    self.infixParseFns[kind] =fn
+proc registerInfix(self: var Parser, kind: TokenType, fn: InfixParseFn) =
+    self.infixParseFns[kind] = fn
 
 proc nextToken(self: var Parser) =
     self.curToken = self.peekToken
@@ -69,23 +69,24 @@ proc parseReturnStatement(self: var Parser): Result[Statement, string] =
 
     return ok(statement)
 
-proc parseExpression(self:var Parser,precedence:Precedence):Result[Expression, string]=
+proc parseExpression(self: var Parser, precedence: Precedence): Result[
+        Expression, string] =
     if not(self.curToken.kind in self.prefixParseFns):
         return err("invalid token type")
-    let prefix=self.prefixParseFns[self.curToken.kind]
-    let leftExp=prefix(self)
+    let prefix = self.prefixParseFns[self.curToken.kind]
+    let leftExp = ?prefix(self)
 
     return ok(leftExp)
 
 
-proc parseExpressionStatement(self: var Parser): Result[Statement,string]=
-    var statement = Statement(kind:StExpression)
+proc parseExpressionStatement(self: var Parser): Result[Statement, string] =
+    var statement = Statement(kind: StExpression)
 
-    statement.expression= ?self.parseExpression(Lowest)
+    statement.expression = ?self.parseExpression(Lowest)
 
     if self.peekTokenIs(SemiColon):
         self.nextToken()
-    
+
     return ok(statement)
 
 
@@ -98,6 +99,10 @@ proc parseStatement(self: var Parser): Result[Statement, string] =
         of Ident:
             return ok(?self.parseExpressionStatement())
         of Int:
+            return ok(?self.parseExpressionStatement())
+        of Bang:
+            return ok(?self.parseExpressionStatement())
+        of Minus:
             return ok(?self.parseExpressionStatement())
         else:
             return err("expected a statement, but found " & describe(self.curToken))
@@ -112,18 +117,32 @@ proc parseProgram*(self: var Parser): Result[Program, string] =
 
     return ok(program)
 
-proc parseIdentifier(self:Parser):Expression=
-    return Expression(kind:ExIdentifier,token:self.curToken,idValue:self.curToken.literal)
+proc parseIdentifier(self:var Parser): Result[Expression,string] =
+    return ok(Expression(kind: ExIdentifier, token: self.curToken,
+            idValue: self.curToken.literal))
 
-proc parseIntegerLiteral(self:Parser):Expression=
-    return Expression(kind:ExIntegerLiteral,token:self.curToken,intValue:self.curToken.literal.parseInt)
+proc parseIntegerLiteral(self:var Parser): Result[Expression,string] =
+    return ok(Expression(kind: ExIntegerLiteral, token: self.curToken,
+            intValue: self.curToken.literal.parseInt))
+
+proc parsePrefixExpression(self: var Parser): Result[Expression,string] =
+    var expression = Expression(kind: PrefixExpression, token: self.curToken,
+            operator: self.curToken.literal)
+
+    self.nextToken()
+    expression.right = ?self.parseExpression(Prefix)
+
+    return ok(expression)
 
 proc newParser*(lexer: Lexer): Parser =
     var parser = Parser(lexer: lexer)
 
-    parser.prefixParseFns=initTable[TokenType,PrefixParseFn]()
-    parser.registerPrefix(Ident,parseIdentifier)
-    parser.registerPrefix(Int,parseIntegerLiteral)
+    parser.prefixParseFns = initTable[TokenType, PrefixParseFn]()
+    parser.registerPrefix(Ident, parseIdentifier)
+    parser.registerPrefix(Int, parseIntegerLiteral)
+    parser.registerPrefix(Bang, parsePrefixExpression)
+    parser.registerPrefix(Minus, parsePrefixExpression)
+
 
     parser.nextToken()
     parser.nextToken()

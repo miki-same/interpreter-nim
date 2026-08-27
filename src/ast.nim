@@ -8,14 +8,20 @@ type StatementKind* = enum
 type ExpressionKind* = enum
     ExIdentifier
     ExIntegerLiteral
+    PrefixExpression
 
-type Expression* = object
-    token*: Token
-    case kind*: ExpressionKind
-    of ExIdentifier:
-        idValue*: string
-    of ExIntegerLiteral:
-        intValue*:int
+type
+    ExpressionObject* = object
+        token*: Token
+        case kind*: ExpressionKind
+        of ExIdentifier:
+            idValue*: string
+        of ExIntegerLiteral:
+            intValue*: int
+        of PrefixExpression:
+            operator*: string
+            right*: Expression
+    Expression* = ref ExpressionObject
 
 proc tokenLiteral*(self: Expression): string =
     return ""
@@ -26,6 +32,11 @@ proc display(self: Expression): string =
         return self.idValue
     of ExIntegerLiteral:
         return $self.intValue
+    of PrefixExpression:
+        result.add("(")
+        result.add(self.operator)
+        result.add(self.right.display())
+        result.add(")")
 
 type Statement* = object
     case kind*: StatementKind
@@ -70,7 +81,7 @@ proc display*(self: Program): string =
     for statement in self.statements:
         result.add(statement.display())
 
-type Precedence* = enum 
+type Precedence* = enum
     Lowest,
     Equals,
     LessGreater,

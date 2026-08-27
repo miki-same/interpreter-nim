@@ -16,13 +16,13 @@ suite "Program.display":
                     kind: ExIdentifier,
                     token: Token(kind: Ident, literal: "myVar"),
                     idValue: "myVar",
-                ),
-                value: Expression(
-                    kind: ExIdentifier,
-                    token: Token(kind: Ident, literal: "anotherVar"),
-                    idValue: "anotherVar",
-                ),
             ),
+            value: Expression(
+                kind: ExIdentifier,
+                token: Token(kind: Ident, literal: "anotherVar"),
+                idValue: "anotherVar",
+            ),
+        ),
         ])
 
         check program.display() == "let myVar = anotherVar;"
@@ -35,8 +35,8 @@ suite "Program.display":
                     kind: ExIdentifier,
                     token: Token(kind: Ident, literal: "anotherVar"),
                     idValue: "anotherVar",
-                ),
             ),
+        ),
         ])
 
         check program.display() == "return anotherVar;"
@@ -123,3 +123,29 @@ return 993322;
         let expression = program.statements[0].expression
         check expression.kind == ExIntegerLiteral
         check expression.intValue == 5
+
+    test "parses prefix expressions":
+        let cases = [
+            (input: "!5", operator: "!", displayed: "(!5);"),
+            (input: "-15", operator: "-", displayed: "(-15);"),
+        ]
+
+        for testCase in cases:
+            checkpoint("input: " & testCase.input)
+
+            var lexer = newLexer(testCase.input)
+            var parser = newParser(lexer)
+            let parsed = parser.parseProgram()
+
+            if parsed.isErr:
+                checkpoint("parse error: " & parsed.error)
+            require parsed.isOk
+
+            let program = parsed.value
+            require program.statements.len == 1
+            require program.statements[0].kind == StExpression
+
+            let expression = program.statements[0].expression
+            check expression.kind == PrefixExpression
+            check expression.operator == testCase.operator
+            check program.display() == testCase.displayed
