@@ -31,6 +31,17 @@ type
             infRight*: Expression
     Expression* = ref ExpressionObject
 
+    StatementObject* = object
+        case kind*: StatementKind
+        of StLet:
+            name*: Expression
+            value*: Expression
+        of StReturn:
+            returnValue*: Expression
+        of StExpression:
+            expression*: Expression
+    Statement* = ref StatementObject
+
 proc tokenLiteral*(self: Expression): string =
     return ""
 
@@ -53,17 +64,6 @@ proc display(self: Expression): string =
         result.add(self.infOperator)
         result.add(self.infRight.display())
         result.add(")")
-
-type Statement* = object
-    case kind*: StatementKind
-    of StLet:
-        name*: Expression
-        value*: Expression
-    of StReturn:
-        returnValue*: Expression
-    of StExpression:
-        expression*: Expression
-
 
 proc tokenLiteral*(self: Statement): string =
     case self.kind:
