@@ -140,6 +140,12 @@ proc parseStatement(self: var Parser): Result[Statement, string] =
             return ok(?self.parseExpressionStatement())
         of Minus:
             return ok(?self.parseExpressionStatement())
+        of True:
+            return ok(?self.parseExpressionStatement())
+        of LParen:
+            return ok(?self.parseExpressionStatement())
+        of False:
+            return ok(?self.parseExpressionStatement())
         else:
             return err("expected a statement, but found " & describe(self.curToken))
 
@@ -160,6 +166,27 @@ proc parseIdentifier(self: var Parser): Result[Expression, string] =
 proc parseIntegerLiteral(self: var Parser): Result[Expression, string] =
     return ok(Expression(kind: ExIntegerLiteral, token: self.curToken,
             intValue: self.curToken.literal.parseInt))
+
+proc parseBoolean(self:var Parser):Result[Expression,string]=
+    let value=
+        case self.curToken.literal
+        of "true":
+            true
+        of "false":
+            false
+        else:
+            return err("invalid literal")
+    return ok(Expression(kind: ExBooleanLiteral, token: self.curToken,
+            boolValue: value))
+
+proc parseGroupedExpression(self:var Parser):Result[Expression,string]=
+    self.nextToken()
+    let exp= ?self.parseExpression(Lowest)
+
+    if not self.expectPeek(RParen):
+        return err("paren not closed")
+
+    return ok(exp)
 
 proc parsePrefixExpression(self: var Parser): Result[Expression, string] =
     var expression = Expression(kind: PrefixExpression, token: self.curToken,
@@ -187,6 +214,9 @@ proc newParser*(lexer: Lexer): Parser =
     parser.prefixParseFns = initTable[TokenType, PrefixParseFn]()
     parser.registerPrefix(Ident, parseIdentifier)
     parser.registerPrefix(Int, parseIntegerLiteral)
+    parser.registerPrefix(True,parseBoolean)
+    parser.registerPrefix(False,parseBoolean)
+    parser.registerPrefix(LParen,parseGroupedExpression)
     parser.registerPrefix(Bang, parsePrefixExpression)
     parser.registerPrefix(Minus, parsePrefixExpression)
 

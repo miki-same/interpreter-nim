@@ -124,6 +124,31 @@ return 993322;
         check expression.kind == ExIntegerLiteral
         check expression.intValue == 5
 
+    test "parses boolean literal expression statements":
+        let cases = [
+            (input: "true;", value: true),
+            (input: "false;", value: false),
+        ]
+
+        for testCase in cases:
+            checkpoint("input: " & testCase.input)
+
+            var lexer = newLexer(testCase.input)
+            var parser = newParser(lexer)
+            let parsed = parser.parseProgram()
+
+            if parsed.isErr:
+                checkpoint("parse error: " & parsed.error)
+            require parsed.isOk
+
+            let program = parsed.value
+            require program.statements.len == 1
+            require program.statements[0].kind == StExpression
+
+            let expression = program.statements[0].expression
+            check expression.kind == ExBooleanLiteral
+            check expression.boolValue == testCase.value
+
     test "parses prefix expressions":
         let cases = [
             (input: "!5", operator: "!", displayed: "(!5);"),
@@ -201,6 +226,13 @@ return 993322;
             (input: "5 < 4 != 3 > 4", displayed: "((5<4)!=(3>4));"),
             (input: "3 + 4 * 5 == 3 * 1 + 4 * 5",
                 displayed: "((3+(4*5))==((3*1)+(4*5)));"),
+            (input: "3 > 5 == false", displayed: "((3>5)==false);"),
+            (input: "3 < 5 == true", displayed: "((3<5)==true);"),
+            (input: "1 + (2 + 3) + 4", displayed: "((1+(2+3))+4);"),
+            (input: "(5 + 5) * 2", displayed: "((5+5)*2);"),
+            (input: "2 / (5 + 5)", displayed: "(2/(5+5));"),
+            (input: "-(5 + 5)", displayed: "(-(5+5));"),
+            (input: "!(true == true)", displayed: "(!(true==true));"),
         ]
 
         for testCase in cases:

@@ -8,6 +8,7 @@ type StatementKind* = enum
 type ExpressionKind* = enum
     ExIdentifier
     ExIntegerLiteral
+    ExBooleanLiteral
     PrefixExpression
     InfixExpression
 
@@ -19,6 +20,8 @@ type
             idValue*: string
         of ExIntegerLiteral:
             intValue*: int
+        of ExBooleanLiteral:
+            boolValue*:bool
         of PrefixExpression:
             prefOperator*: string
             prefRight*: Expression
@@ -37,6 +40,8 @@ proc display(self: Expression): string =
         return self.idValue
     of ExIntegerLiteral:
         return $self.intValue
+    of ExBooleanLiteral:
+        return $self.boolValue
     of PrefixExpression:
         result.add("(")
         result.add(self.prefOperator)
