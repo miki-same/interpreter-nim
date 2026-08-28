@@ -1,4 +1,4 @@
-import std/unittest
+import std/[options, unittest]
 
 import ../src/lexer
 import ../src/parser
@@ -148,6 +148,81 @@ return 993322;
             let expression = program.statements[0].expression
             check expression.kind == ExBooleanLiteral
             check expression.boolValue == testCase.value
+
+    test "parses an if expression":
+        let input = "if (x < y) { x }"
+
+        var lexer = newLexer(input)
+        var parser = newParser(lexer)
+        let parsed = parser.parseProgram()
+
+        if parsed.isErr:
+            checkpoint("parse error: " & parsed.error)
+        require parsed.isOk
+
+        let program = parsed.value
+        require program.statements.len == 1
+        require program.statements[0].kind == StExpression
+
+        let expression = program.statements[0].expression
+        require expression.kind == IfExpression
+
+        require expression.condition.kind == InfixExpression
+        check expression.condition.infOperator == "<"
+        require expression.condition.infLeft.kind == ExIdentifier
+        check expression.condition.infLeft.idValue == "x"
+        require expression.condition.infRight.kind == ExIdentifier
+        check expression.condition.infRight.idValue == "y"
+
+        require expression.consequence.kind == StBlock
+        require expression.consequence.statements.len == 1
+        let consequence = expression.consequence.statements[0]
+        require consequence.kind == StExpression
+        require consequence.expression.kind == ExIdentifier
+        check consequence.expression.idValue == "x"
+
+        check expression.alternative.isNone
+
+    test "parses an if-else expression":
+        let input = "if (x < y) { x } else { y }"
+
+        var lexer = newLexer(input)
+        var parser = newParser(lexer)
+        let parsed = parser.parseProgram()
+
+        if parsed.isErr:
+            checkpoint("parse error: " & parsed.error)
+        require parsed.isOk
+
+        let program = parsed.value
+        require program.statements.len == 1
+        require program.statements[0].kind == StExpression
+
+        let expression = program.statements[0].expression
+        require expression.kind == IfExpression
+
+        require expression.condition.kind == InfixExpression
+        check expression.condition.infOperator == "<"
+        require expression.condition.infLeft.kind == ExIdentifier
+        check expression.condition.infLeft.idValue == "x"
+        require expression.condition.infRight.kind == ExIdentifier
+        check expression.condition.infRight.idValue == "y"
+
+        require expression.consequence.kind == StBlock
+        require expression.consequence.statements.len == 1
+        let consequence = expression.consequence.statements[0]
+        require consequence.kind == StExpression
+        require consequence.expression.kind == ExIdentifier
+        check consequence.expression.idValue == "x"
+
+        require expression.alternative.isSome
+        let alternative = expression.alternative.get
+        require alternative.kind == StBlock
+        require alternative.statements.len == 1
+        let alternativeStatement = alternative.statements[0]
+        require alternativeStatement.kind == StExpression
+        require alternativeStatement.expression.kind == ExIdentifier
+        check alternativeStatement.expression.idValue == "y"
 
     test "parses prefix expressions":
         let cases = [

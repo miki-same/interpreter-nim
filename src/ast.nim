@@ -1,9 +1,11 @@
 import token
+import std/options
 
 type StatementKind* = enum
     StLet
     StReturn
     StExpression
+    StBlock
 
 type ExpressionKind* = enum
     ExIdentifier
@@ -11,6 +13,7 @@ type ExpressionKind* = enum
     ExBooleanLiteral
     PrefixExpression
     InfixExpression
+    IfExpression
 
 type
     ExpressionObject* = object
@@ -21,7 +24,7 @@ type
         of ExIntegerLiteral:
             intValue*: int
         of ExBooleanLiteral:
-            boolValue*:bool
+            boolValue*: bool
         of PrefixExpression:
             prefOperator*: string
             prefRight*: Expression
@@ -29,6 +32,10 @@ type
             infOperator*: string
             infLeft*: Expression
             infRight*: Expression
+        of IfExpression:
+            condition*: Expression
+            consequence*: Statement
+            alternative*: Option[Statement]
     Expression* = ref ExpressionObject
 
     StatementObject* = object
@@ -40,7 +47,13 @@ type
             returnValue*: Expression
         of StExpression:
             expression*: Expression
+        of StBlock:
+            token*: Token
+            statements*: seq[Statement]
     Statement* = ref StatementObject
+
+proc display(self: Expression): string
+proc display(self: Statement): string
 
 proc tokenLiteral*(self: Expression): string =
     return ""
@@ -64,6 +77,15 @@ proc display(self: Expression): string =
         result.add(self.infOperator)
         result.add(self.infRight.display())
         result.add(")")
+    of IfExpression:
+        result.add("if ")
+        result.add(display(self.condition))
+        result.add(" ")
+        result.add(self.consequence.display())
+        if isSome(self.alternative):
+            result.add("else ")
+            result.add(self.alternative.get.display())
+
 
 proc tokenLiteral*(self: Statement): string =
     case self.kind:
@@ -73,18 +95,25 @@ proc tokenLiteral*(self: Statement): string =
             return "return"
         of StExpression:
             return self.expression.tokenLiteral()
+        of StBlock:
+            return self.token.literal
 
 proc display(self: Statement): string =
     case self.kind:
     of StLet:
         result.add(self.tokenLiteral & " ")
         result.add(self.name.display() & " = " & self.value.display())
+        result.add(";")
     of StReturn:
         result.add(self.tokenLiteral & " ")
         result.add(self.returnValue.display())
+        result.add(";")
     of StExpression:
         result.add(self.expression.display())
-    result.add(";")
+        result.add(";")
+    of StBlock:
+        for statement in self.statements:
+            result.add(statement.display())
 
 type Program* = object
     statements*: seq[Statement]
