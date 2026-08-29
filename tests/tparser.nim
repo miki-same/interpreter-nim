@@ -249,8 +249,8 @@ return 993322;
 
     test "parses prefix expressions":
         let cases = [
-            (input: "!5", operator: "!", displayed: "(!5);"),
-            (input: "-15", operator: "-", displayed: "(-15);"),
+            (input: "!5", operator: "!", displayed: "(!5)"),
+            (input: "-15", operator: "-", displayed: "(-15)"),
         ]
 
         for testCase in cases:
@@ -310,27 +310,27 @@ return 993322;
 
     test "respects operator precedence":
         let cases = [
-            (input: "-a * b", displayed: "((-a)*b);"),
-            (input: "!-a", displayed: "(!(-a));"),
-            (input: "a + b + c", displayed: "((a+b)+c);"),
-            (input: "a + b - c", displayed: "((a+b)-c);"),
-            (input: "a * b * c", displayed: "((a*b)*c);"),
-            (input: "a * b / c", displayed: "((a*b)/c);"),
-            (input: "a + b / c", displayed: "(a+(b/c));"),
+            (input: "-a * b", displayed: "((-a)*b)"),
+            (input: "!-a", displayed: "(!(-a))"),
+            (input: "a + b + c", displayed: "((a+b)+c)"),
+            (input: "a + b - c", displayed: "((a+b)-c)"),
+            (input: "a * b * c", displayed: "((a*b)*c)"),
+            (input: "a * b / c", displayed: "((a*b)/c)"),
+            (input: "a + b / c", displayed: "(a+(b/c))"),
             (input: "a + b * c + d / e - f",
-                displayed: "(((a+(b*c))+(d/e))-f);"),
-            (input: "3 + 4; -5 * 5", displayed: "(3+4);((-5)*5);"),
-            (input: "5 > 4 == 3 < 4", displayed: "((5>4)==(3<4));"),
-            (input: "5 < 4 != 3 > 4", displayed: "((5<4)!=(3>4));"),
+                displayed: "(((a+(b*c))+(d/e))-f)"),
+            (input: "3 + 4; -5 * 5", displayed: "(3+4)((-5)*5)"),
+            (input: "5 > 4 == 3 < 4", displayed: "((5>4)==(3<4))"),
+            (input: "5 < 4 != 3 > 4", displayed: "((5<4)!=(3>4))"),
             (input: "3 + 4 * 5 == 3 * 1 + 4 * 5",
-                displayed: "((3+(4*5))==((3*1)+(4*5)));"),
-            (input: "3 > 5 == false", displayed: "((3>5)==false);"),
-            (input: "3 < 5 == true", displayed: "((3<5)==true);"),
-            (input: "1 + (2 + 3) + 4", displayed: "((1+(2+3))+4);"),
-            (input: "(5 + 5) * 2", displayed: "((5+5)*2);"),
-            (input: "2 / (5 + 5)", displayed: "(2/(5+5));"),
-            (input: "-(5 + 5)", displayed: "(-(5+5));"),
-            (input: "!(true == true)", displayed: "(!(true==true));"),
+                displayed: "((3+(4*5))==((3*1)+(4*5)))"),
+            (input: "3 > 5 == false", displayed: "((3>5)==false)"),
+            (input: "3 < 5 == true", displayed: "((3<5)==true)"),
+            (input: "1 + (2 + 3) + 4", displayed: "((1+(2+3))+4)"),
+            (input: "(5 + 5) * 2", displayed: "((5+5)*2)"),
+            (input: "2 / (5 + 5)", displayed: "(2/(5+5))"),
+            (input: "-(5 + 5)", displayed: "(-(5+5))"),
+            (input: "!(true == true)", displayed: "(!(true==true))"),
         ]
 
         for testCase in cases:

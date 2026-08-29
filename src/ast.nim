@@ -122,7 +122,6 @@ proc display(self: Statement): string =
         result.add(";")
     of StExpression:
         result.add(self.expression.display())
-        result.add(";")
     of StBlock:
         for statement in self.statements:
             result.add(statement.display())
