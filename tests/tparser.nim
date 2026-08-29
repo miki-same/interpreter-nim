@@ -128,6 +128,42 @@ return 993322;
             check statement.kind == StReturn
             check statement.tokenLiteral() == "return"
 
+    test "parses complete return statements":
+        let input = """
+return 5;
+return true;
+return foobar;
+"""
+
+        var lexer = newLexer(input)
+        var parser = newParser(lexer)
+        let parsed = parser.parseProgram()
+
+        if parsed.isErr:
+            checkpoint("parse error: " & parsed.error)
+        require parsed.isOk
+
+        let program = parsed.value
+        require program.statements.len == 3
+
+        let integerReturn = program.statements[0]
+        require integerReturn.kind == StReturn
+        require not integerReturn.returnValue.isNil
+        require integerReturn.returnValue.kind == ExIntegerLiteral
+        check integerReturn.returnValue.intValue == 5
+
+        let booleanReturn = program.statements[1]
+        require booleanReturn.kind == StReturn
+        require not booleanReturn.returnValue.isNil
+        require booleanReturn.returnValue.kind == ExBooleanLiteral
+        check booleanReturn.returnValue.boolValue
+
+        let identifierReturn = program.statements[2]
+        require identifierReturn.kind == StReturn
+        require not identifierReturn.returnValue.isNil
+        require identifierReturn.returnValue.kind == ExIdentifier
+        check identifierReturn.returnValue.idValue == "foobar"
+
     test "parses an identifier expression statement":
         let input = "foobar;"
 

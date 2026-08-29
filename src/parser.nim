@@ -77,28 +77,6 @@ proc expectPeek(self: var Parser, kind: TokenType): bool =
     else:
         return false
 
-proc parseLetStatement(self: var Parser): Result[Statement, string] =
-    var statement = Statement(kind: StLet)
-
-    if not self.expectPeek(Ident):
-        return err("expected an identifier after 'let', but found " &
-            describe(self.peekToken))
-    statement.name = Expression(kind: ExIdentifier, token: self.curToken,
-            idValue: self.curToken.literal)
-
-    while not self.curTokenIs(SemiColon):
-        self.nextToken()
-
-    return ok(statement)
-
-proc parseReturnStatement(self: var Parser): Result[Statement, string] =
-    var statement = Statement(kind: StReturn)
-
-    while not self.curTokenIs(SemiColon):
-        self.nextToken()
-
-    return ok(statement)
-
 proc parseExpression(self: var Parser, precedence: Precedence): Result[
         Expression, string] =
     if not(self.curToken.kind in self.prefixParseFns):
@@ -117,6 +95,38 @@ proc parseExpression(self: var Parser, precedence: Precedence): Result[
 
     return ok(leftExp)
 
+proc parseLetStatement(self: var Parser): Result[Statement, string] =
+    var statement = Statement(kind: StLet)
+
+    if not self.expectPeek(Ident):
+        return err("expected an identifier after 'let', but found " &
+            describe(self.peekToken))
+    statement.name = Expression(kind: ExIdentifier, token: self.curToken,
+            idValue: self.curToken.literal)
+    
+    if not self.expectPeek(Assign):
+        return err("expected =, but found: " & self.curToken.literal)
+
+    self.nextToken()
+
+    statement.value= ?self.parseExpression(Lowest)
+
+    if self.peekTokenIs(SemiColon):
+        self.nextToken()
+
+    return ok(statement)
+
+proc parseReturnStatement(self: var Parser): Result[Statement, string] =
+    var statement = Statement(kind: StReturn)
+
+    self.nextToken()
+
+    statement.returnValue= ?self.parseExpression(Lowest)
+
+    if self.peekTokenIs(SemiColon):
+        self.nextToken()
+
+    return ok(statement)
 
 proc parseExpressionStatement(self: var Parser): Result[Statement, string] =
     var statement = Statement(kind: StExpression)
