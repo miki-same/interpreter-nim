@@ -63,6 +63,48 @@ let foobar = 838383;
             check program.statements[i].kind == StLet
             check program.statements[i].name.idValue == expectedName
 
+    test "parses complete let statements":
+        let input = """
+let x = 5;
+let y = true;
+let foobar = y;
+"""
+
+        var lexer = newLexer(input)
+        var parser = newParser(lexer)
+        let parsed = parser.parseProgram()
+
+        if parsed.isErr:
+            checkpoint("parse error: " & parsed.error)
+        require parsed.isOk
+
+        let program = parsed.value
+        require program.statements.len == 3
+
+        let integerBinding = program.statements[0]
+        require integerBinding.kind == StLet
+        require integerBinding.name.kind == ExIdentifier
+        check integerBinding.name.idValue == "x"
+        require not integerBinding.value.isNil
+        require integerBinding.value.kind == ExIntegerLiteral
+        check integerBinding.value.intValue == 5
+
+        let booleanBinding = program.statements[1]
+        require booleanBinding.kind == StLet
+        require booleanBinding.name.kind == ExIdentifier
+        check booleanBinding.name.idValue == "y"
+        require not booleanBinding.value.isNil
+        require booleanBinding.value.kind == ExBooleanLiteral
+        check booleanBinding.value.boolValue
+
+        let identifierBinding = program.statements[2]
+        require identifierBinding.kind == StLet
+        require identifierBinding.name.kind == ExIdentifier
+        check identifierBinding.name.idValue == "foobar"
+        require not identifierBinding.value.isNil
+        require identifierBinding.value.kind == ExIdentifier
+        check identifierBinding.value.idValue == "y"
+
     test "parses return statements":
         let input = """
 return 5;
@@ -247,6 +289,44 @@ return 993322;
         require expression.parameters[1].kind == ExIdentifier
         check expression.parameters[1].idValue == "y"
 
+    test "parses a call expression":
+        let input = "add(1,2*3,4+5);"
+
+        var lexer = newLexer(input)
+        var parser = newParser(lexer)
+        let parsed = parser.parseProgram()
+
+        if parsed.isErr:
+            checkpoint("parse error: " & parsed.error)
+        require parsed.isOk
+
+        let program = parsed.value
+        require program.statements.len == 1
+        require program.statements[0].kind == StExpression
+
+        let expression = program.statements[0].expression
+        require expression.kind == CallExpression
+        require expression.function.kind == ExIdentifier
+        check expression.function.idValue == "add"
+        require expression.arguments.len == 3
+
+        require expression.arguments[0].kind == ExIntegerLiteral
+        check expression.arguments[0].intValue == 1
+
+        require expression.arguments[1].kind == InfixExpression
+        check expression.arguments[1].infOperator == "*"
+        require expression.arguments[1].infLeft.kind == ExIntegerLiteral
+        check expression.arguments[1].infLeft.intValue == 2
+        require expression.arguments[1].infRight.kind == ExIntegerLiteral
+        check expression.arguments[1].infRight.intValue == 3
+
+        require expression.arguments[2].kind == InfixExpression
+        check expression.arguments[2].infOperator == "+"
+        require expression.arguments[2].infLeft.kind == ExIntegerLiteral
+        check expression.arguments[2].infLeft.intValue == 4
+        require expression.arguments[2].infRight.kind == ExIntegerLiteral
+        check expression.arguments[2].infRight.intValue == 5
+
     test "parses prefix expressions":
         let cases = [
             (input: "!5", operator: "!", displayed: "(!5)"),
@@ -331,6 +411,9 @@ return 993322;
             (input: "2 / (5 + 5)", displayed: "(2/(5+5))"),
             (input: "-(5 + 5)", displayed: "(-(5+5))"),
             (input: "!(true == true)", displayed: "(!(true==true))"),
+            (input: "a+add(b*c)+d", displayed: "((a+add((b*c)))+d)"),
+            (input: "add(a,b,1,2*3,4+5,add(6,7*8))",
+                displayed: "add(a,b,1,(2*3),(4+5),add(6,(7*8)))"),
         ]
 
         for testCase in cases:

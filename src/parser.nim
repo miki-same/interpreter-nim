@@ -25,6 +25,8 @@ proc getPrecedence(token: Token): Precedence =
         result = Product
     of Asterisk:
         result = Product
+    of LParen:
+        result = Call
     else:
         result = Lowest
 
@@ -307,6 +309,32 @@ proc parseInfixExpression(self: var Parser, left: Expression): Result[
 
     return ok(expression)
 
+proc parseCallArguments(self: var Parser): Result[seq[Expression],string] =
+    var arguments: seq[Expression] = @[]
+    if self.peekTokenIs(RParen):
+        self.nextToken()
+        return ok(arguments)
+    self.nextToken()
+    arguments.add(?self.parseExpression(Lowest))
+
+    while self.peekTokenIs(Comma):
+        self.nextToken()
+        self.nextToken()
+        arguments.add(?self.parseExpression(Lowest))
+    
+    if not self.expectPeek(RParen):
+        return err("invalid syntax: expected ) but found" &
+                self.curToken.literal)
+    
+    return ok(arguments) 
+
+proc parseCallExpression(self: var Parser, function:Expression):Result[
+        Expression, string]=
+    var expression=Expression(kind:CallExpression,token:self.curToken,function:function)
+    expression.arguments= ?self.parseCallArguments()
+
+    return ok(expression)
+
 proc newParser*(lexer: Lexer): Parser =
     var parser = Parser(lexer: lexer)
 
@@ -330,6 +358,7 @@ proc newParser*(lexer: Lexer): Parser =
     parser.registerInfix(NotEq, parseInfixExpression)
     parser.registerInfix(Lt, parseInfixExpression)
     parser.registerInfix(Gt, parseInfixExpression)
+    parser.registerInfix(LParen,parseCallExpression)
 
     parser.nextToken()
     parser.nextToken()

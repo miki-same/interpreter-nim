@@ -17,6 +17,7 @@ type ExpressionKind* = enum
     PrefixExpression
     InfixExpression
     IfExpression
+    CallExpression
 
 type
     ExpressionObject* = object
@@ -42,6 +43,9 @@ type
             condition*: Expression
             consequence*: Statement
             alternative*: Option[Statement]
+        of CallExpression:
+            function*:Expression # Identifier or FunctionLiteral
+            arguments*:seq[Expression]
     Expression* = ref ExpressionObject
 
     StatementObject* = object
@@ -97,6 +101,11 @@ proc display(self: Expression): string =
         if isSome(self.alternative):
             result.add("else ")
             result.add(self.alternative.get.display())
+    of CallExpression:
+        result.add(self.function.display())
+        result.add("(")
+        result.add(self.arguments.mapIt(it.display()).join(","))
+        result.add(")")
 
 
 proc tokenLiteral*(self: Statement): string =
