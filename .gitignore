@@ -1,2 +1,10 @@
 nimble.develop
 nimble.paths
+
+# Nim compiled binaries
+/src/*
+!/src/*.*
+/src/*.exe
+/tests/*
+!/tests/*.*
+/tests/*.exe
