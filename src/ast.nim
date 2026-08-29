@@ -1,5 +1,7 @@
 import token
 import std/options
+import std/sequtils
+import std/strutils
 
 type StatementKind* = enum
     StLet
@@ -11,6 +13,7 @@ type ExpressionKind* = enum
     ExIdentifier
     ExIntegerLiteral
     ExBooleanLiteral
+    ExFunctionLiteral
     PrefixExpression
     InfixExpression
     IfExpression
@@ -25,6 +28,9 @@ type
             intValue*: int
         of ExBooleanLiteral:
             boolValue*: bool
+        of ExFunctionLiteral:
+            parameters*: seq[Expression]
+            body*: Statement
         of PrefixExpression:
             prefOperator*: string
             prefRight*: Expression
@@ -66,6 +72,12 @@ proc display(self: Expression): string =
         return $self.intValue
     of ExBooleanLiteral:
         return $self.boolValue
+    of ExFunctionLiteral:
+        result.add(self.token.literal)
+        result.add("(")
+        result.add(self.parameters.mapIt(it.display()).join(","))
+        result.add(")")
+        result.add(self.body.display())
     of PrefixExpression:
         result.add("(")
         result.add(self.prefOperator)

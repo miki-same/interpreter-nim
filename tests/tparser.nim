@@ -224,6 +224,29 @@ return 993322;
         require alternativeStatement.expression.kind == ExIdentifier
         check alternativeStatement.expression.idValue == "y"
 
+    test "parses a function literal":
+        let input = "fn(x,y) {x+y;}"
+
+        var lexer = newLexer(input)
+        var parser = newParser(lexer)
+        let parsed = parser.parseProgram()
+
+        if parsed.isErr:
+            checkpoint("parse error: " & parsed.error)
+        require parsed.isOk
+
+        let program = parsed.value
+        require program.statements.len == 1
+        require program.statements[0].kind == StExpression
+
+        let expression = program.statements[0].expression
+        require expression.kind == ExFunctionLiteral
+        require expression.parameters.len == 2
+        require expression.parameters[0].kind == ExIdentifier
+        check expression.parameters[0].idValue == "x"
+        require expression.parameters[1].kind == ExIdentifier
+        check expression.parameters[1].idValue == "y"
+
     test "parses prefix expressions":
         let cases = [
             (input: "!5", operator: "!", displayed: "(!5);"),

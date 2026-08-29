@@ -149,6 +149,8 @@ proc parseStatement(self: var Parser): Result[Statement, string] =
             return ok(?self.parseExpressionStatement())
         of If:
             return ok(?self.parseExpressionStatement())
+        of Function:
+            return ok(?self.parseExpressionStatement())
         else:
             return err("expected a statement, but found " & describe(self.curToken))
 
@@ -243,6 +245,47 @@ proc parseIfExpression(self: var Parser): Result[Expression, string] =
 
     return ok(expression)
 
+proc parseFunctionParameters(self: var Parser): Result[seq[Expression], string] =
+    var identifiers: seq[Expression] = @[]
+    if self.peekTokenIs(RParen):
+        self.nextToken()
+        return ok(identifiers)
+
+    self.nextToken()
+
+    let ident = Expression(kind: ExIdentifier, token: self.curToken,
+            idValue: self.curToken.literal)
+    identifiers.add(ident)
+
+    while self.peekTokenIs(Comma):
+        self.nextToken()
+        self.nextToken()
+        let ident = Expression(kind: ExIdentifier, token: self.curToken,
+                idValue: self.curToken.literal)
+        identifiers.add(ident)
+
+    if not self.expectPeek(RParen):
+        return err("invalid syntax: expected ) but found " &
+                self.curToken.literal)
+
+    return ok(identifiers)
+
+proc parseFunctionLiteral(self: var Parser): Result[Expression, string] =
+    var literal = Expression(kind: ExFunctionLiteral, token: self.curToken)
+
+    if not self.expectPeek(LParen):
+        return err("invalid syntax: expected ( but found" &
+                self.curToken.literal)
+
+    literal.parameters = ?self.parseFunctionParameters()
+
+    if not self.expectPeek(LBrace):
+        return err("invalid syntax: expected ( but found" &
+                self.curToken.literal)
+
+    literal.body = ?self.parseBlockStatement()
+
+    return ok(literal)
 
 proc parsePrefixExpression(self: var Parser): Result[Expression, string] =
     var expression = Expression(kind: PrefixExpression, token: self.curToken,
@@ -276,6 +319,7 @@ proc newParser*(lexer: Lexer): Parser =
     parser.registerPrefix(Bang, parsePrefixExpression)
     parser.registerPrefix(Minus, parsePrefixExpression)
     parser.registerPrefix(If, parseIfExpression)
+    parser.registerPrefix(Function, parseFunctionLiteral)
 
     parser.infixParseFns = initTable[TokenType, InfixParseFn]()
     parser.registerInfix(Plus, parseInfixExpression)
