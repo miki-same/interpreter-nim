@@ -33,5 +33,5 @@ proc `==`*(a, b: Object): bool =
         return a.intValue == b.intValue
     of OBoolean:
         return a.boolValue == b.boolValue
-    else:
-        return false
+    of ONull:
+        return true

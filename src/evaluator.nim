@@ -108,7 +108,7 @@ proc evalStatement(statement: Statement): Result[Object, string] =
         return err("invalid statement type")
 
 proc evalStatements(statements: seq[Statement]): Result[Object, string] =
-    var resultObject: Object
+    var resultObject = NULL
     for statement in statements:
         resultObject = ?evalStatement(statement)
 

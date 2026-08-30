@@ -4,7 +4,7 @@ import ../src/lexer
 import ../src/parser
 import ../src/objects
 
-include ../src/evaluator
+import ../src/evaluator
 
 
 proc evaluate(input: string): Object =
