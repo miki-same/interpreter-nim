@@ -5,8 +5,8 @@ import ast
 
 const PROMPT = ">> "
 
-const FACE_PARTS="\"\"\"\"\"\""
-const MONKEY_FACE="""
+const FACE_PARTS = "\"\"\"\"\"\""
+const MONKEY_FACE = """
             __,__
    .--.  .-"     "-.  .--.
   / .. \/  .-. .-.  \/ .. \
@@ -30,12 +30,12 @@ proc start*() =
         var lexer = newLexer(scanned)
         var parser = newParser(lexer)
 
-        let program=parser.parseProgram()
+        let program = parser.parseProgram()
         if program.isErr:
             echo MONKEY_FACE
             echo "Woops! We ran into some monkey business here!"
             echo "parser error:"
-            echo "\t",program.error
+            echo "\t", program.error
             continue
 
         echo program.value.display()

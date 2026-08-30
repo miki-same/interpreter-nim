@@ -103,13 +103,13 @@ proc parseLetStatement(self: var Parser): Result[Statement, string] =
             describe(self.peekToken))
     statement.name = Expression(kind: ExIdentifier, token: self.curToken,
             idValue: self.curToken.literal)
-    
+
     if not self.expectPeek(Assign):
         return err("expected =, but found: " & self.curToken.literal)
 
     self.nextToken()
 
-    statement.value= ?self.parseExpression(Lowest)
+    statement.value = ?self.parseExpression(Lowest)
 
     if self.peekTokenIs(SemiColon):
         self.nextToken()
@@ -121,7 +121,7 @@ proc parseReturnStatement(self: var Parser): Result[Statement, string] =
 
     self.nextToken()
 
-    statement.returnValue= ?self.parseExpression(Lowest)
+    statement.returnValue = ?self.parseExpression(Lowest)
 
     if self.peekTokenIs(SemiColon):
         self.nextToken()
@@ -319,7 +319,7 @@ proc parseInfixExpression(self: var Parser, left: Expression): Result[
 
     return ok(expression)
 
-proc parseCallArguments(self: var Parser): Result[seq[Expression],string] =
+proc parseCallArguments(self: var Parser): Result[seq[Expression], string] =
     var arguments: seq[Expression] = @[]
     if self.peekTokenIs(RParen):
         self.nextToken()
@@ -331,17 +331,18 @@ proc parseCallArguments(self: var Parser): Result[seq[Expression],string] =
         self.nextToken()
         self.nextToken()
         arguments.add(?self.parseExpression(Lowest))
-    
+
     if not self.expectPeek(RParen):
         return err("invalid syntax: expected ) but found" &
                 self.curToken.literal)
-    
-    return ok(arguments) 
 
-proc parseCallExpression(self: var Parser, function:Expression):Result[
-        Expression, string]=
-    var expression=Expression(kind:CallExpression,token:self.curToken,function:function)
-    expression.arguments= ?self.parseCallArguments()
+    return ok(arguments)
+
+proc parseCallExpression(self: var Parser, function: Expression): Result[
+        Expression, string] =
+    var expression = Expression(kind: CallExpression, token: self.curToken,
+            function: function)
+    expression.arguments = ?self.parseCallArguments()
 
     return ok(expression)
 
@@ -368,7 +369,7 @@ proc newParser*(lexer: Lexer): Parser =
     parser.registerInfix(NotEq, parseInfixExpression)
     parser.registerInfix(Lt, parseInfixExpression)
     parser.registerInfix(Gt, parseInfixExpression)
-    parser.registerInfix(LParen,parseCallExpression)
+    parser.registerInfix(LParen, parseCallExpression)
 
     parser.nextToken()
     parser.nextToken()

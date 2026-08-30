@@ -44,8 +44,8 @@ type
             consequence*: Statement
             alternative*: Option[Statement]
         of CallExpression:
-            function*:Expression # Identifier or FunctionLiteral
-            arguments*:seq[Expression]
+            function*: Expression # Identifier or FunctionLiteral
+            arguments*: seq[Expression]
     Expression* = ref ExpressionObject
 
     StatementObject* = object
