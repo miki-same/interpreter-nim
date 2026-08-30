@@ -59,17 +59,13 @@ proc evalIntegerInfixExpression(operator: string, left: Object,
         return ok(Object(objectType: OInteger,
                 intValue: left.intValue div right.intValue))
     of ">":
-        return ok(Object(objectType: OBoolean, boolValue: left.intValue >
-                right.intValue))
+        return ok(nativeBoolToBooleanObject(left.intValue > right.intValue))
     of "<":
-        return ok(Object(objectType: OBoolean, boolValue: left.intValue <
-                right.intValue))
+        return ok(nativeBoolToBooleanObject(left.intValue < right.intValue))
     of "==":
-        return ok(Object(objectType: OBoolean, boolValue: left.intValue ==
-                right.intValue))
+        return ok(nativeBoolToBooleanObject(left.intValue == right.intValue))
     of "!=":
-        return ok(Object(objectType: OBoolean, boolValue: left.intValue !=
-                right.intValue))
+        return ok(nativeBoolToBooleanObject(left.intValue != right.intValue))
     else:
         return ok(NULL)
 
