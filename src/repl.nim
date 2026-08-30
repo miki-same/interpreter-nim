@@ -1,6 +1,8 @@
 import lexer
 import parser
 import ast
+import evaluator
+import objects
 
 const PROMPT = ">> "
 
@@ -36,5 +38,9 @@ proc start*() =
             echo "parser error:"
             echo "\t", program.error
             continue
+
+        let evaluated = eval(program.value)
+        if evaluated.isOk:
+            echo evaluated.value.inspect()
 
         echo program.value.display()
