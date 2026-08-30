@@ -94,8 +94,8 @@ proc evalInfixExpression(operator: string, left: Object, right: Object): Result[
         return ok(nativeBoolToBooleanObject(left != right))
     return ok(NULL)
 
-proc isTruthy(obj:Object):bool=
-    if obj==NULL or obj==FALSE:
+proc isTruthy(obj: Object): bool =
+    if obj == NULL or obj == FALSE:
         return false
     return true
 
@@ -113,7 +113,7 @@ proc evalExpression(expression: Expression): Result[Object, string] =
         let right = ?evalExpression(expression.infRight)
         return ok(?evalInfixExpression(expression.infOperator, left, right))
     of IfExpression:
-        let condition= ?evalExpression(expression.condition)
+        let condition = ?evalExpression(expression.condition)
         if isTruthy(condition):
             return ok(?evalStatement(expression.consequence))
         elif expression.alternative.isSome:
