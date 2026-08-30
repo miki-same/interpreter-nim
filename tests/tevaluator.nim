@@ -48,3 +48,35 @@ suite "Evaluator.eval":
 
             check evaluated.objectType == OBoolean
             check evaluated.boolValue == testCase.expected
+
+    test "evaluates bang prefix expressions":
+        let cases = [
+            (input: "!true", expected: false),
+            (input: "!false", expected: true),
+            (input: "!5", expected: false),
+            (input: "!!true", expected: true),
+            (input: "!!false", expected: false),
+            (input: "!!5", expected: true),
+        ]
+
+        for testCase in cases:
+            checkpoint("input: " & testCase.input)
+
+            let evaluated = evaluate(testCase.input)
+
+            check evaluated.objectType == OBoolean
+            check evaluated.boolValue == testCase.expected
+
+    test "evaluates minus prefix expressions":
+        let cases = [
+            (input: "-5", expected: -5),
+            (input: "-10", expected: -10),
+        ]
+
+        for testCase in cases:
+            checkpoint("input: " & testCase.input)
+
+            let evaluated = evaluate(testCase.input)
+
+            check evaluated.objectType == OInteger
+            check evaluated.intValue == testCase.expected
