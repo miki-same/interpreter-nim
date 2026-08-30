@@ -3,12 +3,23 @@ import objects
 import results
 export results
 
+const
+    TRUE= Object(objectType:OBoolean,boolValue:true)
+    FALSE= Object(objectType:OBoolean,boolValue:false)
+    NULL= Object(objectType:ONull)
+
+proc nativeBoolToBooleanObject(input:bool):Object=
+    if input:
+        return TRUE
+    else:
+        return FALSE
+
 proc evalExpression(expression: Expression): Result[Object, string] =
     case expression.kind:
     of ExIntegerLiteral:
         return ok(Object(objectType: OInteger, intValue: expression.intValue))
     of ExBooleanLiteral:
-        return ok(Object(objectType:OBoolean,boolValue:expression.boolValue))
+        return ok(nativeBoolToBooleanObject(expression.boolValue))
     else:
         return err("invalid expression type")
 
