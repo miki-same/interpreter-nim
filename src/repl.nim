@@ -1,6 +1,5 @@
 import lexer
 import parser
-import token
 import ast
 
 const PROMPT = ">> "
