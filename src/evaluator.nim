@@ -7,8 +7,8 @@ proc evalExpression(expression: Expression): Result[Object, string] =
     case expression.kind:
     of ExIntegerLiteral:
         return ok(Object(objectType: OInteger, intValue: expression.intValue))
-    # of ExBooleanLiteral:
-    #     return Object(objectType:OBoolean,boolValue:expression.boolValue)
+    of ExBooleanLiteral:
+        return ok(Object(objectType:OBoolean,boolValue:expression.boolValue))
     else:
         return err("invalid expression type")
 

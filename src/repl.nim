@@ -43,4 +43,3 @@ proc start*() =
         if evaluated.isOk:
             echo evaluated.value.inspect()
 
-        echo program.value.display()

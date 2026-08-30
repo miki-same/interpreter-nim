@@ -34,3 +34,17 @@ suite "Evaluator.eval":
 
             check evaluated.objectType == OInteger
             check evaluated.intValue == testCase.expected
+
+    test "evaluates boolean programs to boolean objects":
+        let cases = [
+            (input: "true", expected: true),
+            (input: "false", expected: false),
+        ]
+
+        for testCase in cases:
+            checkpoint("input: " & testCase.input)
+
+            let evaluated = evaluate(testCase.input)
+
+            check evaluated.objectType == OBoolean
+            check evaluated.boolValue == testCase.expected
