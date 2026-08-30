@@ -1,5 +1,6 @@
 import ast
 import objects
+import std/options
 import results
 export results
 
@@ -7,6 +8,19 @@ const
     TRUE = Object(objectType: OBoolean, boolValue: true)
     FALSE = Object(objectType: OBoolean, boolValue: false)
     NULL = Object(objectType: ONull)
+
+proc evalStatements(statements: seq[Statement]): Result[Object, string]
+proc evalStatement(statement: Statement): Result[Object, string]
+proc evalExpression(expression: Expression): Result[Object, string]
+
+proc eval*[T: Program or Statement or Expression](node: T): Result[Object, string] =
+    when T is Program:
+        return ok(?evalStatements(node.statements))
+    elif T is Statement:
+        return ok(?evalStatement(node))
+    elif T is Expression:
+        return ok(?evalExpression(node))
+
 
 proc nativeBoolToBooleanObject(input: bool): Object =
     if input:
@@ -80,6 +94,11 @@ proc evalInfixExpression(operator: string, left: Object, right: Object): Result[
         return ok(nativeBoolToBooleanObject(left != right))
     return ok(NULL)
 
+proc isTruthy(obj:Object):bool=
+    if obj==NULL or obj==FALSE:
+        return false
+    return true
+
 proc evalExpression(expression: Expression): Result[Object, string] =
     case expression.kind:
     of ExIntegerLiteral:
@@ -93,6 +112,13 @@ proc evalExpression(expression: Expression): Result[Object, string] =
         let left = ?evalExpression(expression.infLeft)
         let right = ?evalExpression(expression.infRight)
         return ok(?evalInfixExpression(expression.infOperator, left, right))
+    of IfExpression:
+        let condition= ?evalExpression(expression.condition)
+        if isTruthy(condition):
+            return ok(?evalStatement(expression.consequence))
+        elif expression.alternative.isSome:
+            return ok(?evalStatement(expression.alternative.get))
+        return ok(NULL)
     else:
         return err("invalid expression type")
 
@@ -100,6 +126,8 @@ proc evalStatement(statement: Statement): Result[Object, string] =
     case statement.kind:
     of StExpression:
         return ok(?evalExpression(statement.expression))
+    of StBlock:
+        return ok(?evalStatements(statement.statements))
     else:
         return err("invalid statement type")
 
@@ -109,12 +137,3 @@ proc evalStatements(statements: seq[Statement]): Result[Object, string] =
         resultObject = ?evalStatement(statement)
 
     return ok(resultObject)
-
-
-proc eval*[T: Program or Statement or Expression](node: T): Result[Object, string] =
-    when T is Program:
-        return ok(?evalStatements(node.statements))
-    elif T is Statement:
-        return ok(?evalStatement(node))
-    elif T is Expression:
-        return ok(?evalExpression(node))

@@ -14,6 +14,8 @@ proc evaluate(input: string): Object =
     require program.isOk
 
     let res = eval(program.value)
+    if res.isErr:
+        checkpoint("error: " & res.error)
     require res.isOk
 
     return res.value
@@ -131,3 +133,34 @@ suite "Evaluator.eval":
 
             check evaluated.objectType == OBoolean
             check evaluated.boolValue == testCase.expected
+
+    test "evaluates if expressions":
+        let cases = [
+            (input: "if (true) { 10 }", expected: 10),
+            (input: "if (1) { 10 }", expected: 10),
+            (input: "if (0) { 10 }", expected: 10),
+            (input: "if (false) { 10 } else { 20 }", expected: 20),
+            (input: "if (1 < 2) { 10 } else { 20 }", expected: 10),
+            (input: "if (1 > 2) { 10 } else { 20 }", expected: 20),
+        ]
+
+        for testCase in cases:
+            checkpoint("input: " & testCase.input)
+
+            let evaluated = evaluate(testCase.input)
+
+            check evaluated.objectType == OInteger
+            check evaluated.intValue == testCase.expected
+
+    test "evaluates if expressions without a matching branch to null":
+        let cases = [
+            "if (false) { 10 }",
+            "if (1 > 2) { 10 }",
+        ]
+
+        for input in cases:
+            checkpoint("input: " & input)
+
+            let evaluated = evaluate(input)
+
+            check evaluated.objectType == ONull
