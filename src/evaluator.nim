@@ -15,15 +15,13 @@ proc nativeBoolToBooleanObject(input: bool): Object =
         return FALSE
 
 proc evalBangOperatorExpression(right: Object): Object =
-    case right.objectType:
-    of OBoolean:
-        if right.boolValue:
-            return FALSE
-        return TRUE
-    of ONull:
-        return TRUE
-    else:
+    if right == TRUE:
         return FALSE
+    if right == FALSE:
+        return TRUE
+    if right == NULL:
+        return TRUE
+    return FALSE
 
 proc evalMinusOperatorExpression(right: Object): Result[Object, string] =
     case right.objectType:
@@ -42,6 +40,50 @@ proc evalPrefixExpression(operator: string, right: Object): Result[Object, strin
     else:
         return err("invalid prefix operator")
 
+proc evalIntegerInfixExpression(operator: string, left: Object,
+        right: Object): Result[Object, string] =
+    if left.getType != OInteger or right.getType != OInteger:
+        return err("invalid object type")
+
+    case operator:
+    of "+":
+        return ok(Object(objectType: OInteger,
+                intValue: left.intValue+right.intValue))
+    of "-":
+        return ok(Object(objectType: OInteger,
+                intValue: left.intValue-right.intValue))
+    of "*":
+        return ok(Object(objectType: OInteger,
+                intValue: left.intValue*right.intValue))
+    of "/":
+        return ok(Object(objectType: OInteger,
+                intValue: left.intValue div right.intValue))
+    of ">":
+        return ok(Object(objectType: OBoolean, boolValue: left.intValue >
+                right.intValue))
+    of "<":
+        return ok(Object(objectType: OBoolean, boolValue: left.intValue <
+                right.intValue))
+    of "==":
+        return ok(Object(objectType: OBoolean, boolValue: left.intValue ==
+                right.intValue))
+    of "!=":
+        return ok(Object(objectType: OBoolean, boolValue: left.intValue !=
+                right.intValue))
+    else:
+        return ok(NULL)
+
+
+proc evalInfixExpression(operator: string, left: Object, right: Object): Result[
+        Object, string] =
+    if left.getType == OInteger and right.getType == OInteger:
+        return ok(?evalIntegerInfixExpression(operator, left, right))
+    if operator == "==":
+        return ok(nativeBoolToBooleanObject(left == right))
+    if operator == "!=":
+        return ok(nativeBoolToBooleanObject(left != right))
+    return ok(NULL)
+
 proc evalExpression(expression: Expression): Result[Object, string] =
     case expression.kind:
     of ExIntegerLiteral:
@@ -51,6 +93,10 @@ proc evalExpression(expression: Expression): Result[Object, string] =
     of PrefixExpression:
         let right = ?evalExpression(expression.prefRight)
         return ok(?evalPrefixExpression(expression.prefOperator, right))
+    of InfixExpression:
+        let left = ?evalExpression(expression.infLeft)
+        let right = ?evalExpression(expression.infRight)
+        return ok(?evalInfixExpression(expression.infOperator, left, right))
     else:
         return err("invalid expression type")
 

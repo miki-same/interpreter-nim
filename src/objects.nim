@@ -23,3 +23,15 @@ proc inspect*(self: Object): string =
 
 proc getType*(self: Object): ObjectType =
     return self.objectType
+
+proc `==`*(a, b: Object): bool =
+    if a.objectType != b.objectType:
+        return false
+
+    case a.objectType:
+    of OInteger:
+        return a.intValue == b.intValue
+    of OBoolean:
+        return a.boolValue == b.boolValue
+    else:
+        return false
