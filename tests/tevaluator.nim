@@ -164,3 +164,21 @@ suite "Evaluator.eval":
             let evaluated = evaluate(input)
 
             check evaluated.objectType == ONull
+
+    test "evaluates return statements":
+        let cases = [
+            (input: "return 10;", expected: 10),
+            (input: "return 10; 9;", expected: 10),
+            (input: "return 2 * 5; 9;", expected: 10),
+            (input: "if (10 > 1) { if (10 > 1) { return 10; } return 1; }",
+                    expected: 10),
+            (input: "9; return 2*5; 9;", expected: 10)
+        ]
+
+        for testCase in cases:
+            checkpoint("input: " & testCase.input)
+
+            let evaluated = evaluate(testCase.input)
+
+            check evaluated.objectType == OInteger
+            check evaluated.intValue == testCase.expected

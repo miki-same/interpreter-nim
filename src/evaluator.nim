@@ -122,12 +122,28 @@ proc evalExpression(expression: Expression): Result[Object, string] =
     else:
         return err("invalid expression type")
 
+proc evalBlockStatement(statement: Statement): Result[Object, string] =
+    if statement.kind != StBlock:
+        return err("invalid statement kind")
+
+    var resultObject = NULL
+    for statement in statement.statements:
+        resultObject = ?evalStatement(statement)
+
+        if resultObject.objectType == OReturn:
+            return ok(resultObject)
+
+    return ok(resultObject)
+
 proc evalStatement(statement: Statement): Result[Object, string] =
     case statement.kind:
     of StExpression:
         return ok(?evalExpression(statement.expression))
     of StBlock:
-        return ok(?evalStatements(statement.statements))
+        return ok(?evalBlockStatement(statement))
+    of StReturn:
+        return ok(Object(objectType: OReturn, returnValue: ?evalExpression(
+                statement.returnValue)))
     else:
         return err("invalid statement type")
 
@@ -135,5 +151,18 @@ proc evalStatements(statements: seq[Statement]): Result[Object, string] =
     var resultObject = NULL
     for statement in statements:
         resultObject = ?evalStatement(statement)
+        if resultObject.objectType == OReturn:
+            return ok(resultObject.returnValue)
+
+    return ok(resultObject)
+
+proc evalProgram(program: Program): Result[Object, string] =
+    var resultObject = NULL
+
+    for statement in program.statements:
+        resultObject = ?evalStatement(statement)
+
+        if resultObject.objectType == OReturn:
+            return ok(resultObject.returnValue)
 
     return ok(resultObject)
