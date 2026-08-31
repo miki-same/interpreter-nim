@@ -4,7 +4,7 @@ import std/options
 import results
 export results
 
-const
+let
     TRUE = Object(objectType: OBoolean, boolValue: true)
     FALSE = Object(objectType: OBoolean, boolValue: false)
     NULL = Object(objectType: ONull)

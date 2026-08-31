@@ -2,15 +2,20 @@ type ObjectType* = enum
     OInteger = "INTEGER"
     OBoolean = "BOOLEAN"
     ONull = "NULL"
+    OReturn = "RETURN_VALUE"
 
-type Object* = object
-    case objectType*: ObjectType
-    of OInteger:
-        intValue*: int
-    of OBoolean:
-        boolValue*: bool
-    of ONull:
-        discard
+type
+    ObjectObj* = object
+        case objectType*: ObjectType
+        of OInteger:
+            intValue*: int
+        of OBoolean:
+            boolValue*: bool
+        of ONull:
+            discard
+        of OReturn:
+            returnValue*: Object
+    Object* = ref ObjectObj
 
 proc inspect*(self: Object): string =
     case self.objectType:
@@ -20,6 +25,8 @@ proc inspect*(self: Object): string =
         return $self.boolValue
     of ONull:
         return "null"
+    of OReturn:
+        return self.returnValue.inspect()
 
 proc getType*(self: Object): ObjectType =
     return self.objectType
@@ -35,3 +42,5 @@ proc `==`*(a, b: Object): bool =
         return a.boolValue == b.boolValue
     of ONull:
         return true
+    of OReturn:
+        return a.returnValue == b.returnValue
