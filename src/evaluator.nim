@@ -1,6 +1,7 @@
 import ast
 import objects
 import std/options
+import std/strutils
 import results
 export results
 
@@ -9,13 +10,22 @@ let
     FALSE = Object(objectType: OBoolean, boolValue: false)
     NULL = Object(objectType: ONull)
 
+proc evalProgram(program: Program): Result[Object, string]
 proc evalStatements(statements: seq[Statement]): Result[Object, string]
 proc evalStatement(statement: Statement): Result[Object, string]
 proc evalExpression(expression: Expression): Result[Object, string]
 
+proc newError(format: string, args: varargs[string, `$`]): Object =
+    return Object(objectType: OError, errorMessage: format % args)
+
+proc isError(obj: Object): bool =
+    if obj.objectType == OError:
+        return true
+    return false
+
 proc eval*[T: Program or Statement or Expression](node: T): Result[Object, string] =
     when T is Program:
-        return ok(?evalStatements(node.statements))
+        return ok(?evalProgram(node))
     elif T is Statement:
         return ok(?evalStatement(node))
     elif T is Expression:
@@ -43,7 +53,7 @@ proc evalMinusOperatorExpression(right: Object): Result[Object, string] =
         var value = right.intValue
         return ok(Object(objectType: OInteger, intValue: -value))
     else:
-        return ok(NULL)
+        return ok(newError("unknown operator: -$1", right.getType))
 
 proc evalPrefixExpression(operator: string, right: Object): Result[Object, string] =
     case operator:
@@ -81,18 +91,24 @@ proc evalIntegerInfixExpression(operator: string, left: Object,
     of "!=":
         return ok(nativeBoolToBooleanObject(left.intValue != right.intValue))
     else:
-        return ok(NULL)
+        return ok(newError("unknown operator: $1 $2 $3", left.getType, operator,
+                right.getType))
 
 
 proc evalInfixExpression(operator: string, left: Object, right: Object): Result[
         Object, string] =
+
     if left.getType == OInteger and right.getType == OInteger:
         return ok(?evalIntegerInfixExpression(operator, left, right))
+    if left.getType != right.getType:
+        return ok(newError("type mismatch: $1 $2 $3", left.getType, operator,
+                right.getType))
     if operator == "==":
         return ok(nativeBoolToBooleanObject(left == right))
     if operator == "!=":
         return ok(nativeBoolToBooleanObject(left != right))
-    return ok(NULL)
+    return ok(newError("unknown operator: $1 $2 $3", left.getType, operator,
+            right.getType))
 
 proc isTruthy(obj: Object): bool =
     if obj == NULL or obj == FALSE:
@@ -107,13 +123,25 @@ proc evalExpression(expression: Expression): Result[Object, string] =
         return ok(nativeBoolToBooleanObject(expression.boolValue))
     of PrefixExpression:
         let right = ?evalExpression(expression.prefRight)
+        if isError(right):
+            return ok(right)
+
         return ok(?evalPrefixExpression(expression.prefOperator, right))
     of InfixExpression:
         let left = ?evalExpression(expression.infLeft)
+        if isError(left):
+            return ok(left)
+
         let right = ?evalExpression(expression.infRight)
+        if isError(right):
+            return ok(right)
+
         return ok(?evalInfixExpression(expression.infOperator, left, right))
     of IfExpression:
         let condition = ?evalExpression(expression.condition)
+        if isError(condition):
+            return ok(condition)
+
         if isTruthy(condition):
             return ok(?evalStatement(expression.consequence))
         elif expression.alternative.isSome:
@@ -130,7 +158,7 @@ proc evalBlockStatement(statement: Statement): Result[Object, string] =
     for statement in statement.statements:
         resultObject = ?evalStatement(statement)
 
-        if resultObject.objectType == OReturn:
+        if resultObject.objectType == OReturn or resultObject.objectType == OError:
             return ok(resultObject)
 
     return ok(resultObject)
@@ -142,8 +170,11 @@ proc evalStatement(statement: Statement): Result[Object, string] =
     of StBlock:
         return ok(?evalBlockStatement(statement))
     of StReturn:
-        return ok(Object(objectType: OReturn, returnValue: ?evalExpression(
-                statement.returnValue)))
+        let value = ?evalExpression(statement.returnValue)
+        if isError(value):
+            return ok(value)
+
+        return ok(Object(objectType: OReturn, returnValue: value))
     else:
         return err("invalid statement type")
 
@@ -164,5 +195,8 @@ proc evalProgram(program: Program): Result[Object, string] =
 
         if resultObject.objectType == OReturn:
             return ok(resultObject.returnValue)
+
+        if resultObject.objectType == OError:
+            return ok(resultObject)
 
     return ok(resultObject)

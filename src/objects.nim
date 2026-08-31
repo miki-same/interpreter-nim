@@ -3,6 +3,7 @@ type ObjectType* = enum
     OBoolean = "BOOLEAN"
     ONull = "NULL"
     OReturn = "RETURN_VALUE"
+    OError = "ERROR"
 
 type
     ObjectObj* = object
@@ -15,6 +16,8 @@ type
             discard
         of OReturn:
             returnValue*: Object
+        of OError:
+            errorMessage*: string
     Object* = ref ObjectObj
 
 proc inspect*(self: Object): string =
@@ -27,12 +30,14 @@ proc inspect*(self: Object): string =
         return "null"
     of OReturn:
         return self.returnValue.inspect()
+    of OError:
+        return "ERROR: " & self.errorMessage
 
 proc getType*(self: Object): ObjectType =
     return self.objectType
 
 proc `==`*(a, b: Object): bool =
-    if a.objectType != b.objectType:
+    if a.getType() != b.getType():
         return false
 
     case a.objectType:
@@ -44,3 +49,5 @@ proc `==`*(a, b: Object): bool =
         return true
     of OReturn:
         return a.returnValue == b.returnValue
+    of OError:
+        return a.errorMessage == b.errorMessage

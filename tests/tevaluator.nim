@@ -182,3 +182,30 @@ suite "Evaluator.eval":
 
             check evaluated.objectType == OInteger
             check evaluated.intValue == testCase.expected
+
+    test "returns errors for invalid operations":
+        let cases = [
+            (input: "5 + true;", expected: "type mismatch: INTEGER + BOOLEAN"),
+            (input: "5 + true; 5;", expected: "type mismatch: INTEGER + BOOLEAN"),
+            (input: "-true", expected: "unknown operator: -BOOLEAN"),
+            (input: "true + false;", expected: "unknown operator: BOOLEAN + BOOLEAN"),
+            (input: "5; true + false; 5",
+                    expected: "unknown operator: BOOLEAN + BOOLEAN"),
+            (input: "if (10 > 1) { true + false; }",
+                    expected: "unknown operator: BOOLEAN + BOOLEAN"),
+            (input: "if (10 > 1) { if (10 > 1) { return true + false; } return 1; }",
+                    expected: "unknown operator: BOOLEAN + BOOLEAN"),
+        ]
+
+        for testCase in cases:
+            checkpoint("input: " & testCase.input)
+
+            var lexer = newLexer(testCase.input)
+            var parser = newParser(lexer)
+            let program = parser.parseProgram()
+            require program.isOk
+
+            let evaluated = eval(program.value)
+
+            require evaluated.isok
+            check evaluated.value.errorMessage == testCase.expected
