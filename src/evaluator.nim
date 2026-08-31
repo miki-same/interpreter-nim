@@ -11,7 +11,6 @@ let
     NULL = Object(objectType: ONull)
 
 proc evalProgram(program: Program): Result[Object, string]
-proc evalStatements(statements: seq[Statement]): Result[Object, string]
 proc evalStatement(statement: Statement): Result[Object, string]
 proc evalExpression(expression: Expression): Result[Object, string]
 
@@ -177,15 +176,6 @@ proc evalStatement(statement: Statement): Result[Object, string] =
         return ok(Object(objectType: OReturn, returnValue: value))
     else:
         return err("invalid statement type")
-
-proc evalStatements(statements: seq[Statement]): Result[Object, string] =
-    var resultObject = NULL
-    for statement in statements:
-        resultObject = ?evalStatement(statement)
-        if resultObject.objectType == OReturn:
-            return ok(resultObject.returnValue)
-
-    return ok(resultObject)
 
 proc evalProgram(program: Program): Result[Object, string] =
     var resultObject = NULL
