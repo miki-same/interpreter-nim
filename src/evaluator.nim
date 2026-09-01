@@ -2,6 +2,7 @@ import ast
 import objects
 import std/options
 import std/strutils
+import std/strformat
 import std/enumerate
 import results
 export results
@@ -122,6 +123,9 @@ proc extendFunctionEnv(fn: Object, args: seq[Object]): Result[Environment, strin
         return err("not a function")
     var env = newEnclosedEnvironment(fn.env)
 
+    if len(fn.parameters)!=len(args):
+        return err(fmt("need {len(fn.parameters)} parameters, but got {len(args)}"))
+
     for i, param in enumerate(fn.parameters):
         env.set(param.idValue, args[i])
 
@@ -137,7 +141,11 @@ proc applyFunction(fn: Object, args: seq[Object]): Result[Object, string] =
     if fn.getType() != OFunction:
         return ok(newError("not a function: $1", fn.getType()))
 
-    var extendedEnv = ?extendFunctionEnv(fn, args)
+    let extendedEnvRes = extendFunctionEnv(fn, args)
+    if extendedEnvRes.isErr:
+        return ok(newError(extendedEnvRes.error))
+    var extendedEnv=extendedEnvRes.value
+
     let evaluated = ?evalStatement(fn.body, extendedEnv)
     return ok(unwrapReturnValue(evaluated))
 
