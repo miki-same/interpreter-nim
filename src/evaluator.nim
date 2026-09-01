@@ -1,5 +1,6 @@
 import ast
 import objects
+import environment
 import std/options
 import std/strutils
 import results
@@ -10,9 +11,10 @@ let
     FALSE = Object(objectType: OBoolean, boolValue: false)
     NULL = Object(objectType: ONull)
 
-proc evalProgram(program: Program): Result[Object, string]
-proc evalStatement(statement: Statement): Result[Object, string]
-proc evalExpression(expression: Expression): Result[Object, string]
+proc evalProgram(program: Program, env: var Environment): Result[Object, string]
+proc evalStatement(statement: Statement, env: var Environment): Result[Object, string]
+proc evalExpression(expression: Expression, env: var Environment): Result[
+        Object, string]
 
 proc newError(format: string, args: varargs[string, `$`]): Object =
     return Object(objectType: OError, errorMessage: format % args)
@@ -22,13 +24,14 @@ proc isError(obj: Object): bool =
         return true
     return false
 
-proc eval*[T: Program or Statement or Expression](node: T): Result[Object, string] =
+proc eval*[T: Program or Statement or Expression](node: T,
+        env: var Environment): Result[Object, string] =
     when T is Program:
-        return ok(?evalProgram(node))
+        return ok(?evalProgram(node, env))
     elif T is Statement:
-        return ok(?evalStatement(node))
+        return ok(?evalStatement(node, env))
     elif T is Expression:
-        return ok(?evalExpression(node))
+        return ok(?evalExpression(node, env))
 
 
 proc nativeBoolToBooleanObject(input: bool): Object =
@@ -114,74 +117,86 @@ proc isTruthy(obj: Object): bool =
         return false
     return true
 
-proc evalExpression(expression: Expression): Result[Object, string] =
+proc evalExpression(expression: Expression, env: var Environment): Result[
+        Object, string] =
     case expression.kind:
+    of ExIdentifier:
+        let val = env.get(expression.idValue)
+        if val.isSome:
+            return ok(val.get)
+
+        return ok(newError("identifier not found:$1", expression.idValue))
     of ExIntegerLiteral:
         return ok(Object(objectType: OInteger, intValue: expression.intValue))
     of ExBooleanLiteral:
         return ok(nativeBoolToBooleanObject(expression.boolValue))
     of PrefixExpression:
-        let right = ?evalExpression(expression.prefRight)
+        let right = ?evalExpression(expression.prefRight, env)
         if isError(right):
             return ok(right)
 
         return ok(?evalPrefixExpression(expression.prefOperator, right))
     of InfixExpression:
-        let left = ?evalExpression(expression.infLeft)
+        let left = ?evalExpression(expression.infLeft, env)
         if isError(left):
             return ok(left)
 
-        let right = ?evalExpression(expression.infRight)
+        let right = ?evalExpression(expression.infRight, env)
         if isError(right):
             return ok(right)
 
         return ok(?evalInfixExpression(expression.infOperator, left, right))
     of IfExpression:
-        let condition = ?evalExpression(expression.condition)
+        let condition = ?evalExpression(expression.condition, env)
         if isError(condition):
             return ok(condition)
 
         if isTruthy(condition):
-            return ok(?evalStatement(expression.consequence))
+            return ok(?evalStatement(expression.consequence, env))
         elif expression.alternative.isSome:
-            return ok(?evalStatement(expression.alternative.get))
+            return ok(?evalStatement(expression.alternative.get, env))
         return ok(NULL)
     else:
         return err("invalid expression type")
 
-proc evalBlockStatement(statement: Statement): Result[Object, string] =
+proc evalBlockStatement(statement: Statement, env: var Environment): Result[
+        Object, string] =
     if statement.kind != StBlock:
         return err("invalid statement kind")
 
     var resultObject = NULL
     for statement in statement.statements:
-        resultObject = ?evalStatement(statement)
+        resultObject = ?evalStatement(statement, env)
 
         if resultObject.objectType == OReturn or resultObject.objectType == OError:
             return ok(resultObject)
 
     return ok(resultObject)
 
-proc evalStatement(statement: Statement): Result[Object, string] =
+proc evalStatement(statement: Statement, env: var Environment): Result[Object, string] =
     case statement.kind:
     of StExpression:
-        return ok(?evalExpression(statement.expression))
+        return ok(?evalExpression(statement.expression, env))
     of StBlock:
-        return ok(?evalBlockStatement(statement))
+        return ok(?evalBlockStatement(statement, env))
     of StReturn:
-        let value = ?evalExpression(statement.returnValue)
+        let value = ?evalExpression(statement.returnValue, env)
         if isError(value):
             return ok(value)
 
         return ok(Object(objectType: OReturn, returnValue: value))
-    else:
-        return err("invalid statement type")
+    of StLet:
+        let value = ?evalExpression(statement.value, env)
+        if isError(value):
+            return ok(value)
 
-proc evalProgram(program: Program): Result[Object, string] =
+        return ok(env.set(statement.name.idValue, value))
+
+proc evalProgram(program: Program, env: var Environment): Result[Object, string] =
     var resultObject = NULL
 
     for statement in program.statements:
-        resultObject = ?evalStatement(statement)
+        resultObject = ?evalStatement(statement, env)
 
         if resultObject.objectType == OReturn:
             return ok(resultObject.returnValue)

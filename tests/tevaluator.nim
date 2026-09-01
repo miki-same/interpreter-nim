@@ -3,6 +3,7 @@ import std/unittest
 import ../src/lexer
 import ../src/parser
 import ../src/objects
+import ../src/environment
 
 import ../src/evaluator
 
@@ -13,7 +14,9 @@ proc evaluate(input: string): Object =
     let program = parser.parseProgram()
     require program.isOk
 
-    let res = eval(program.value)
+    var env = newEnvironment()
+
+    let res = eval(program.value, env)
     if res.isErr:
         checkpoint("error: " & res.error)
     require res.isOk
@@ -183,6 +186,29 @@ suite "Evaluator.eval":
             check evaluated.objectType == OInteger
             check evaluated.intValue == testCase.expected
 
+    test "evaluates let statements":
+        let cases = [
+            (input: "let a = 5; a;", expected: 5),
+            (input: "let a = 5 * 5; a;", expected: 25),
+            (input: "let a = 5; let b = a; b;", expected: 5),
+            (input: "let a = 5; let b = a; let c = a + b + 5; c;",
+                    expected: 15),
+        ]
+
+        for testCase in cases:
+            checkpoint("input: " & testCase.input)
+
+            let evaluated = evaluate(testCase.input)
+
+            check evaluated.objectType == OInteger
+            check evaluated.intValue == testCase.expected
+
+    test "returns an error for an undefined identifier":
+        let evaluated = evaluate("foobar")
+
+        check evaluated.objectType == OError
+        check evaluated.errorMessage == "identifier not found:foobar"
+
     test "returns errors for invalid operations":
         let cases = [
             (input: "5 + true;", expected: "type mismatch: INTEGER + BOOLEAN"),
@@ -205,7 +231,9 @@ suite "Evaluator.eval":
             let program = parser.parseProgram()
             require program.isOk
 
-            let evaluated = eval(program.value)
+            var env = newEnvironment()
+
+            let evaluated = eval(program.value, env)
 
             require evaluated.isok
             check evaluated.value.errorMessage == testCase.expected

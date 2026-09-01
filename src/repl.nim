@@ -3,6 +3,7 @@ import parser
 import ast
 import evaluator
 import objects
+import environment
 
 const PROMPT = ">> "
 
@@ -22,6 +23,8 @@ const MONKEY_FACE = """
 """
 
 proc start*() =
+    var env = newEnvironment()
+
     while true:
         stdout.write(PROMPT)
         let scanned = stdin.readLine
@@ -39,7 +42,7 @@ proc start*() =
             echo "\t", program.error
             continue
 
-        let evaluated = eval(program.value)
+        let evaluated = eval(program.value, env)
         if evaluated.isOk:
             echo evaluated.value.inspect()
 
