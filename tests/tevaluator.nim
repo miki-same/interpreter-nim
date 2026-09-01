@@ -228,6 +228,22 @@ suite "Evaluator.eval":
             check evaluated.objectType == OInteger
             check evaluated.intValue == testCase.expected
 
+    test "evaluate high-order functions":
+        let cases = [
+            (input: "let newAdder = fn(x) { return fn(y){ return x+y}; }; let addTwo=newAdder(2); addTwo(3)",
+                    expected: 5),
+            (input: "let newNewAdder = fn(x) { return fn(y){ return fn(z){ return x+y+z; }; }; }; let newAdder=newNewAdder(4) ; let addSix=newAdder(2); addSix(3)",
+                    expected: 9),
+        ]
+
+        for testCase in cases:
+            checkpoint("input: " & testCase.input)
+
+            let evaluated = evaluate(testCase.input)
+
+            check evaluated.objectType == OInteger
+            check evaluated.intValue == testCase.expected
+
     test "returns an error for an undefined identifier":
         let evaluated = evaluate("foobar")
 
