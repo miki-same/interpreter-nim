@@ -1,8 +1,8 @@
 import ast
 import objects
-import environment
 import std/options
 import std/strutils
+import std/enumerate
 import results
 export results
 
@@ -117,6 +117,40 @@ proc isTruthy(obj: Object): bool =
         return false
     return true
 
+proc extendFunctionEnv(fn: Object, args: seq[Object]): Result[Environment, string] =
+    if fn.getType() != OFunction:
+        return err("not a function")
+    var env = newEnclosedEnvironment(fn.env)
+
+    for i, param in enumerate(fn.parameters):
+        env.set(param.idValue, args[i])
+
+    return ok(env)
+
+proc unwrapReturnValue(obj: Object): Object =
+    if obj.getType() == OReturn:
+        return obj.returnValue
+
+    return obj
+
+proc applyFunction(fn: Object, args: seq[Object]): Result[Object, string] =
+    if fn.getType() != OFunction:
+        return ok(newError("not a function: $1", fn.getType()))
+
+    var extendedEnv = ?extendFunctionEnv(fn, args)
+    let evaluated = ?evalStatement(fn.body, extendedEnv)
+    return ok(unwrapReturnValue(evaluated))
+
+proc evalExpressions(exps: seq[Expression], env: var Environment): Result[seq[
+        Object], string] =
+    var values: seq[Object] = @[]
+    for exp in exps:
+        let evaluated = ?evalExpression(exp, env)
+        if isError(evaluated):
+            return ok(@[evaluated])
+        values.add(evaluated)
+    return ok(values)
+
 proc evalExpression(expression: Expression, env: var Environment): Result[
         Object, string] =
     case expression.kind:
@@ -130,6 +164,10 @@ proc evalExpression(expression: Expression, env: var Environment): Result[
         return ok(Object(objectType: OInteger, intValue: expression.intValue))
     of ExBooleanLiteral:
         return ok(nativeBoolToBooleanObject(expression.boolValue))
+    of ExFunctionLiteral:
+        let fn = Object(objectType: OFunction,
+                parameters: expression.parameters, body: expression.body, env: env)
+        return ok(fn)
     of PrefixExpression:
         let right = ?evalExpression(expression.prefRight, env)
         if isError(right):
@@ -156,8 +194,18 @@ proc evalExpression(expression: Expression, env: var Environment): Result[
         elif expression.alternative.isSome:
             return ok(?evalStatement(expression.alternative.get, env))
         return ok(NULL)
-    else:
-        return err("invalid expression type")
+    of CallExpression:
+        let function = ?evalExpression(expression.function, env)
+        if isError(function):
+            return ok(function)
+
+        let args = ?evalExpressions(expression.arguments, env)
+        if len(args) == 1 and args[0].objectType == OError:
+            return ok(args[0])
+
+        let res = ?applyFunction(function, args)
+
+        return ok(res)
 
 proc evalBlockStatement(statement: Statement, env: var Environment): Result[
         Object, string] =

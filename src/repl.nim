@@ -3,7 +3,6 @@ import parser
 import ast
 import evaluator
 import objects
-import environment
 
 const PROMPT = ">> "
 

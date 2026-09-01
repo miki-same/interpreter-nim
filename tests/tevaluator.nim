@@ -1,9 +1,9 @@
 import std/unittest
 
+import ../src/ast
 import ../src/lexer
 import ../src/parser
 import ../src/objects
-import ../src/environment
 
 import ../src/evaluator
 
@@ -192,6 +192,31 @@ suite "Evaluator.eval":
             (input: "let a = 5 * 5; a;", expected: 25),
             (input: "let a = 5; let b = a; b;", expected: 5),
             (input: "let a = 5; let b = a; let c = a + b + 5; c;",
+                    expected: 15),
+        ]
+
+        for testCase in cases:
+            checkpoint("input: " & testCase.input)
+
+            let evaluated = evaluate(testCase.input)
+
+            check evaluated.objectType == OInteger
+            check evaluated.intValue == testCase.expected
+
+    test "evaluates a function literal":
+        let evaluated = evaluate("fn(x) { x + 2; };")
+
+        check evaluated.objectType == OFunction
+        require evaluated.parameters.len == 1
+        check evaluated.parameters[0].idValue == "x"
+        check evaluated.body.display() == "(x+2)"
+
+    test "evaluates function calls":
+        let cases = [
+            (input: "let identity = fn(x) { x; }; identity(5);", expected: 5),
+            (input: "let double = fn(x) { x * 2; }; double(5);", expected: 10),
+            (input: "let add = fn(x, y) { x + y; }; add(5, 5);", expected: 10),
+            (input: "let add = fn(x, y) { x + y; }; add(5, add(5, 5));",
                     expected: 15),
         ]
 

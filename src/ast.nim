@@ -62,13 +62,13 @@ type
             statements*: seq[Statement]
     Statement* = ref StatementObject
 
-proc display(self: Expression): string
-proc display(self: Statement): string
+proc display*(self: Expression): string
+proc display*(self: Statement): string
 
 proc tokenLiteral*(self: Expression): string =
     return ""
 
-proc display(self: Expression): string =
+proc display*(self: Expression): string =
     case self.kind:
     of ExIdentifier:
         return self.idValue
@@ -119,7 +119,7 @@ proc tokenLiteral*(self: Statement): string =
         of StBlock:
             return self.token.literal
 
-proc display(self: Statement): string =
+proc display*(self: Statement): string =
     case self.kind:
     of StLet:
         result.add(self.tokenLiteral & " ")
