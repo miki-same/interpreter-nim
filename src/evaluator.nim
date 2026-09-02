@@ -26,38 +26,112 @@ proc isError(obj: Object): bool =
         return true
     return false
 
+let
+    builtinLen = proc (args: varargs[
+            Object]): Object =
+        if len(args) != 1:
+            return newError("wrong number of arguments. got=$1, want=$2", len(
+                    args), 1)
+        let arg = args[0]
+
+        case arg.getType():
+        of OString:
+            return Object(objectType: OInteger, intValue: len(arg.strValue))
+        of OArray:
+            return Object(objectType: OInteger, intValue: len(arg.elements))
+        else:
+            return newError("argument to `len` not supported, got $1",
+                    arg.getType())
+
+    builtinStr = proc (args: varargs[
+            Object]): Object =
+        if len(args) != 1:
+            return newError("wrong number of arguments. got=$1, want=$2", len(
+                    args), 1)
+        let arg = args[0]
+
+        case arg.getType():
+        of OString:
+            return Object(objectType: OString, strValue: arg.strValue)
+        of OInteger:
+            return Object(objectType: OString, strValue: $arg.intValue)
+        of OBoolean:
+            let s = if(arg.boolValue): "true" else: "false"
+            return Object(objectType: OString, strValue: s)
+        of ONull:
+            return Object(objectType: OString, strValue: "null")
+        else:
+            return newError("argument to `str` not supported, got $1",
+                    arg.getType())
+    builtinFirst = proc (args: varargs[
+            Object]): Object =
+        if len(args) != 1:
+            return newError("wrong number of arguments. got=$1, want=$2", len(
+                    args), 1)
+        let arg = args[0]
+
+        case arg.getType():
+        of OArray:
+            if len(arg.elements) == 0:
+                return NULL
+            return arg.elements[0]
+        else:
+            return newError("argument to `first` not supported, got $1",
+                    arg.getType())
+    builtinLast = proc (args: varargs[
+            Object]): Object =
+        if len(args) != 1:
+            return newError("wrong number of arguments. got=$1, want=$2", len(
+                    args), 1)
+        let arg = args[0]
+
+        case arg.getType():
+        of OArray:
+            if len(arg.elements) == 0:
+                return NULL
+            return arg.elements[^1]
+        else:
+            return newError("argument to `last` not supported, got $1",
+                    arg.getType())
+    builtinRest = proc (args: varargs[
+            Object]): Object =
+        if len(args) != 1:
+            return newError("wrong number of arguments. got=$1, want=$2", len(
+                    args), 1)
+        let arg = args[0]
+
+        case arg.getType():
+        of OArray:
+            if len(arg.elements) == 0:
+                return NULL
+            return Object(objectType: OArray, elements: arg.elements[1..^1])
+        else:
+            return newError("argument to `rest` not supported, got $1",
+                    arg.getType())
+    builtinPush = proc (args: varargs[
+            Object]): Object =
+        if len(args) != 2:
+            return newError("wrong number of arguments. got=$1, want=$2", len(
+                    args), 2)
+        let arr = args[0]
+        let element = args[1]
+
+        case arr.getType():
+        of OArray:
+            var newElements = arr.elements
+            newElements.add(element)
+            return Object(objectType: OArray, elements: newElements)
+        else:
+            return newError("argument 1 to `push` not supported, got $1",
+                    arr.getType())
+
 let builtins = {
-    "len": Object(objectType: OBuiltIn, fn: proc (args: varargs[
-            Object]): Object =
-    if len(args) != 1:
-        return newError("wrong number of arguments. got=$1, want=$2", len(args), 1)
-    let arg = args[0]
-
-    case arg.getType():
-    of OString:
-        return Object(objectType: OInteger, intValue: len(arg.strValue))
-    else:
-        return newError("argument to `len` not supported, got $1", arg.getType())
-    ),
-    "str": Object(objectType: OBuiltIn, fn: proc (args: varargs[
-            Object]): Object =
-    if len(args) != 1:
-        return newError("wrong number of arguments. got=$1, want=$2", len(args), 1)
-    let arg = args[0]
-
-    case arg.getType():
-    of OString:
-        return Object(objectType: OString, strValue: arg.strValue)
-    of OInteger:
-        return Object(objectType: OString, strValue: $arg.intValue)
-    of OBoolean:
-        let s = if(arg.boolValue): "true" else: "false"
-        return Object(objectType: OString, strValue: s)
-    of ONull:
-        return Object(objectType: OString, strValue: "null")
-    else:
-        return newError("argument to `str` not supported, got $1", arg.getType())
-    )
+    "len": Object(objectType: OBuiltIn, fn: builtinLen),
+    "str": Object(objectType: OBuiltIn, fn: builtinStr),
+    "first": Object(objectType: OBuiltIn, fn: builtinFirst),
+    "last": Object(objectType: OBuiltIn, fn: builtinLast),
+    "rest": Object(objectType: OBuiltIn, fn: builtinRest),
+    "push": Object(objectType: OBuiltIn, fn: builtinPush)
 }.toTable
 
 

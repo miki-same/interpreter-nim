@@ -108,6 +108,97 @@ suite "Evaluator.eval":
             require evaluated.objectType == OInteger
             check evaluated.intValue == testCase.expected
 
+    test "evaluates the built-in len function for an array":
+        let cases = [
+            (input: "len([])", expected: 0),
+            (input: "len([1, 2, 3])", expected: 3),
+        ]
+
+        for testCase in cases:
+            checkpoint("input: " & testCase.input)
+
+            let evaluated = evaluate(testCase.input)
+
+            require evaluated.objectType == OInteger
+            check evaluated.intValue == testCase.expected
+
+    test "evaluates the built-in first function":
+        let evaluated = evaluate("first([1, 2, 3])")
+
+        require evaluated.objectType == OInteger
+        check evaluated.intValue == 1
+
+        let empty = evaluate("first([])")
+        check empty.objectType == ONull
+
+    test "evaluates the built-in last function":
+        let evaluated = evaluate("last([1, 2, 3])")
+
+        require evaluated.objectType == OInteger
+        check evaluated.intValue == 3
+
+        let empty = evaluate("last([])")
+        check empty.objectType == ONull
+
+    test "evaluates the built-in rest function":
+        let evaluated = evaluate("rest([1, 2, 3])")
+
+        require evaluated.objectType == OArray
+        require evaluated.elements.len == 2
+        require evaluated.elements[0].objectType == OInteger
+        check evaluated.elements[0].intValue == 2
+        require evaluated.elements[1].objectType == OInteger
+        check evaluated.elements[1].intValue == 3
+
+        let single = evaluate("rest([1])")
+        require single.objectType == OArray
+        check single.elements.len == 0
+
+        let empty = evaluate("rest([])")
+        check empty.objectType == ONull
+
+    test "evaluates the built-in push function":
+        let evaluated = evaluate("push([1, 2], 3)")
+
+        require evaluated.objectType == OArray
+        require evaluated.elements.len == 3
+
+        let expected = [1, 2, 3]
+        for i, expectedValue in expected:
+            checkpoint("element[" & $i & "]")
+            require evaluated.elements[i].objectType == OInteger
+            check evaluated.elements[i].intValue == expectedValue
+
+        let pushedToEmpty = evaluate("push([], 1)")
+        require pushedToEmpty.objectType == OArray
+        require pushedToEmpty.elements.len == 1
+        require pushedToEmpty.elements[0].objectType == OInteger
+        check pushedToEmpty.elements[0].intValue == 1
+
+    test "returns errors for invalid array built-in calls":
+        let cases = [
+            (input: "first(1)",
+                expected: "argument to `first` not supported, got INTEGER"),
+            (input: "last(1)",
+                expected: "argument to `last` not supported, got INTEGER"),
+            (input: "rest(1)",
+                expected: "argument to `rest` not supported, got INTEGER"),
+            (input: "push(1, 2)",
+                expected: "argument 1 to `push` not supported, got INTEGER"),
+            (input: "first([], [])",
+                expected: "wrong number of arguments. got=2, want=1"),
+            (input: "push([])",
+                expected: "wrong number of arguments. got=1, want=2"),
+        ]
+
+        for testCase in cases:
+            checkpoint("input: " & testCase.input)
+
+            let evaluated = evaluate(testCase.input)
+
+            require evaluated.objectType == OError
+            check evaluated.errorMessage == testCase.expected
+
     test "returns errors for invalid calls to the built-in len function":
         let cases = [
             (input: "len(1)",
