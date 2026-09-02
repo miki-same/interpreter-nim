@@ -52,6 +52,36 @@ suite "Evaluator.eval":
         require evaluated.objectType == OString
         check evaluated.strValue == "Hello World!"
 
+    test "evaluates the built-in len function for a string":
+        let cases = [
+            (input: "len(\"hello world\")", expected: 11),
+            (input: "len(\"\")", expected: 0),
+        ]
+
+        for testCase in cases:
+            checkpoint("input: " & testCase.input)
+
+            let evaluated = evaluate(testCase.input)
+
+            require evaluated.objectType == OInteger
+            check evaluated.intValue == testCase.expected
+
+    test "returns errors for invalid calls to the built-in len function":
+        let cases = [
+            (input: "len(1)",
+                    expected: "argument to `len` not supported, got INTEGER"),
+            (input: "len(\"one\", \"two\")",
+                    expected: "wrong number of arguments. got=2, want=1"),
+        ]
+
+        for testCase in cases:
+            checkpoint("input: " & testCase.input)
+
+            let evaluated = evaluate(testCase.input)
+
+            require evaluated.objectType == OError
+            check evaluated.errorMessage == testCase.expected
+
     test "evaluates boolean programs to boolean objects":
         let cases = [
             (input: "true", expected: true),

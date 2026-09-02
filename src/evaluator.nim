@@ -4,6 +4,7 @@ import std/options
 import std/strutils
 import std/strformat
 import std/enumerate
+import std/tables
 import results
 export results
 
@@ -24,6 +25,22 @@ proc isError(obj: Object): bool =
     if obj.objectType == OError:
         return true
     return false
+
+let builtins = {
+    "len": Object(objectType: OBuiltIn, fn: proc (args: varargs[
+            Object]): Object =
+    if len(args) != 1:
+        return newError("wrong number of arguments. got=$1, want=$2", len(args), 1)
+    let arg = args[0]
+
+    case arg.getType():
+    of OString:
+        return Object(objectType: OInteger, intValue: len(arg.strValue))
+    else:
+        return newError("argument to `len` not supported, got $1", arg.getType())
+    )
+}.toTable
+
 
 proc eval*[T: Program or Statement or Expression](node: T,
         env: var Environment): Result[Object, string] =
@@ -152,16 +169,22 @@ proc unwrapReturnValue(obj: Object): Object =
     return obj
 
 proc applyFunction(fn: Object, args: seq[Object]): Result[Object, string] =
-    if fn.getType() != OFunction:
+    if fn.getType() != OFunction and fn.getType() != OBuiltIn:
         return ok(newError("not a function: $1", fn.getType()))
 
-    let extendedEnvRes = extendFunctionEnv(fn, args)
-    if extendedEnvRes.isErr:
-        return ok(newError(extendedEnvRes.error))
-    var extendedEnv = extendedEnvRes.value
+    case fn.getType():
+    of OFunction:
+        let extendedEnvRes = extendFunctionEnv(fn, args)
+        if extendedEnvRes.isErr:
+            return ok(newError(extendedEnvRes.error))
+        var extendedEnv = extendedEnvRes.value
 
-    let evaluated = ?evalStatement(fn.body, extendedEnv)
-    return ok(unwrapReturnValue(evaluated))
+        let evaluated = ?evalStatement(fn.body, extendedEnv)
+        return ok(unwrapReturnValue(evaluated))
+    of OBuiltIn:
+        return ok(fn.fn(args))
+    else:
+        return err("unreachable")
 
 proc evalExpressions(exps: seq[Expression], env: var Environment): Result[seq[
         Object], string] =
@@ -180,6 +203,9 @@ proc evalExpression(expression: Expression, env: var Environment): Result[
         let val = env.get(expression.idValue)
         if val.isSome:
             return ok(val.get)
+
+        if expression.idValue in builtins:
+            return ok(builtins[expression.idValue])
 
         return ok(newError("identifier not found:$1", expression.idValue))
     of ExIntegerLiteral:

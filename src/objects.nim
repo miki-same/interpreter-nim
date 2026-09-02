@@ -11,6 +11,7 @@ type ObjectType* = enum
     ONull = "NULL"
     OReturn = "RETURN_VALUE"
     OFunction = "FUNCTION"
+    OBuiltIn = "BUILTIN"
     OError = "ERROR"
 
 type
@@ -30,9 +31,13 @@ type
             parameters*: seq[Expression] #Identifiers
             body*: Statement             #BlockStatement
             env*: Environment
+        of OBuiltIn:
+            fn*: BuiltInFunction
         of OError:
             errorMessage*: string
     Object* = ref ObjectObj
+
+    BuiltInFunction = proc(args: varargs[Object]): Object
 
     EnvironmentObject = object
         store*: Table[string, Object]
@@ -58,6 +63,8 @@ proc inspect*(self: Object): string =
         result.add("){\n")
         result.add(self.body.display())
         result.add("\n}")
+    of OBuiltIn:
+        return "builtin function"
     of OError:
         return "ERROR: " & self.errorMessage
 
@@ -81,6 +88,8 @@ proc `==`*(a, b: Object): bool =
         return a.returnValue == b.returnValue
     of OFunction:
         return a.parameters == b.parameters and a.body == b.body
+    of OBuiltIn:
+        return a.fn == b.fn
     of OError:
         return a.errorMessage == b.errorMessage
 
