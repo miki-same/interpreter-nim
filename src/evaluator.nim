@@ -205,6 +205,17 @@ proc applyFunction(fn: Object, args: seq[Object]): Result[Object, string] =
     else:
         return err("unreachable")
 
+proc applyIndex(arr: Object, index: Object): Result[Object, string] =
+    if arr.getType() != OArray:
+        return ok(newError("not a array: $1", arr.getType()))
+    if index.getType() != OInteger:
+        return ok(newError("not a integer: $1", index.getType()))
+
+    if index.intValue < 0 or index.intValue >= len(arr.elements):
+        return ok(NULL)
+
+    return ok(arr.elements[index.intValue])
+
 proc evalExpressions(exps: seq[Expression], env: var Environment): Result[seq[
         Object], string] =
     var values: seq[Object] = @[]
@@ -234,7 +245,11 @@ proc evalExpression(expression: Expression, env: var Environment): Result[
     of ExBooleanLiteral:
         return ok(nativeBoolToBooleanObject(expression.boolValue))
     of ExArrayLiteral:
-        return err("TODO")
+        let elements = ?evalExpressions(expression.elements, env)
+        if len(elements) == 1 and elements[0].getType() == OError:
+            return ok(elements[0])
+
+        return ok(Object(objectType: OArray, elements: elements))
     of ExFunctionLiteral:
         let fn = Object(objectType: OFunction,
                 parameters: expression.parameters, body: expression.body, env: env)
@@ -277,6 +292,22 @@ proc evalExpression(expression: Expression, env: var Environment): Result[
         let res = ?applyFunction(function, args)
 
         return ok(res)
+    of IndexExpression:
+        let arr = ?evalExpression(expression.idxLeft, env)
+        if isError(arr):
+            return ok(arr)
+        if arr.getType() != OArray:
+            return ok(newError("argument for index not supported, got $1",
+                    arr.getType()))
+
+        let index = ?evalExpression(expression.index, env)
+        if isError(index):
+            return ok(index)
+        if index.getType() != OInteger:
+            return ok(newError("argument for index not supported, got $1",
+                    index.getType()))
+
+        return ok(?applyIndex(arr, index))
 
 proc evalBlockStatement(statement: Statement, env: var Environment): Result[
         Object, string] =

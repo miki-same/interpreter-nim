@@ -40,6 +40,48 @@ suite "Evaluator.eval":
             check evaluated.objectType == OInteger
             check evaluated.intValue == testCase.expected
 
+    test "evaluates array literals":
+        let evaluated = evaluate("[1, 2 * 2, 3 + 3]")
+
+        require evaluated.objectType == OArray
+        require evaluated.elements.len == 3
+
+        let expected = [1, 4, 6]
+        for i, expectedValue in expected:
+            checkpoint("element[" & $i & "]")
+            require evaluated.elements[i].objectType == OInteger
+            check evaluated.elements[i].intValue == expectedValue
+
+    test "evaluates array index expressions":
+        let cases = [
+            (input: "[1, 2, 3][0]", expected: 1),
+            (input: "[1, 2, 3][1]", expected: 2),
+            (input: "[1, 2, 3][2]", expected: 3),
+            (input: "let i = 0; [1][i]", expected: 1),
+            (input: "let myArray = [1, 2, 3]; myArray[2]", expected: 3),
+        ]
+
+        for testCase in cases:
+            checkpoint("input: " & testCase.input)
+
+            let evaluated = evaluate(testCase.input)
+
+            require evaluated.objectType == OInteger
+            check evaluated.intValue == testCase.expected
+
+    test "evaluates out-of-bounds array indexes to null":
+        let inputs = [
+            "[1, 2, 3][3]",
+            "[1, 2, 3][-1]",
+        ]
+
+        for input in inputs:
+            checkpoint("input: " & input)
+
+            let evaluated = evaluate(input)
+
+            check evaluated.objectType == ONull
+
     test "evaluates string literals to string objects":
         let evaluated = evaluate("\"hello world\"")
 

@@ -12,6 +12,7 @@ type ObjectType* = enum
     OReturn = "RETURN_VALUE"
     OFunction = "FUNCTION"
     OBuiltIn = "BUILTIN"
+    OArray = "ARRAY"
     OError = "ERROR"
 
 type
@@ -33,6 +34,8 @@ type
             env*: Environment
         of OBuiltIn:
             fn*: BuiltInFunction
+        of OArray:
+            elements*: seq[Object]
         of OError:
             errorMessage*: string
     Object* = ref ObjectObj
@@ -65,6 +68,10 @@ proc inspect*(self: Object): string =
         result.add("\n}")
     of OBuiltIn:
         return "builtin function"
+    of OArray:
+        result.add("[")
+        result.add(self.elements.mapIt(it.inspect()).join(","))
+        result.add("]")
     of OError:
         return "ERROR: " & self.errorMessage
 
@@ -90,6 +97,14 @@ proc `==`*(a, b: Object): bool =
         return a.parameters == b.parameters and a.body == b.body
     of OBuiltIn:
         return a.fn == b.fn
+    of OArray:
+        if len(a.elements) != len(b.elements):
+            return false
+
+        for i in 0..<len(a.elements):
+            if a.elements[i] != b.elements[i]:
+                return false
+        return true
     of OError:
         return a.errorMessage == b.errorMessage
 

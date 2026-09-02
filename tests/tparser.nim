@@ -257,6 +257,34 @@ return foobar;
         require array.elements[2].infRight.kind == ExIntegerLiteral
         check array.elements[2].infRight.intValue == 3
 
+    test "parses an index expression":
+        let input = "myArray[1 + 1];"
+
+        var lexer = newLexer(input)
+        var parser = newParser(lexer)
+        let parsed = parser.parseProgram()
+
+        if parsed.isErr:
+            checkpoint("parse error: " & parsed.error)
+        require parsed.isOk
+
+        let program = parsed.value
+        require program.statements.len == 1
+        require program.statements[0].kind == StExpression
+
+        let indexExpression = program.statements[0].expression
+        require indexExpression.kind == IndexExpression
+
+        require indexExpression.idxLeft.kind == ExIdentifier
+        check indexExpression.idxLeft.idValue == "myArray"
+
+        require indexExpression.index.kind == InfixExpression
+        check indexExpression.index.infOperator == "+"
+        require indexExpression.index.infLeft.kind == ExIntegerLiteral
+        check indexExpression.index.infLeft.intValue == 1
+        require indexExpression.index.infRight.kind == ExIntegerLiteral
+        check indexExpression.index.infRight.intValue == 1
+
     test "parses boolean literal expression statements":
         let cases = [
             (input: "true;", value: true),
@@ -505,6 +533,10 @@ return foobar;
             (input: "a+add(b*c)+d", displayed: "((a+add((b*c)))+d)"),
             (input: "add(a,b,1,2*3,4+5,add(6,7*8))",
                 displayed: "add(a,b,1,(2*3),(4+5),add(6,(7*8)))"),
+            (input: "a*[1,2,3,4][b*c]*d",
+                displayed: "((a*([1,2,3,4][(b*c)]))*d)"),
+            (input: "add(a * b[2], b[1], 2 * [1, 2][1])",
+                displayed: "add((a*(b[2])),(b[1]),(2*([1,2][1])))"),
         ]
 
         for testCase in cases:

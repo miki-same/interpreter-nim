@@ -20,6 +20,7 @@ type ExpressionKind* = enum
     InfixExpression
     IfExpression
     CallExpression
+    IndexExpression
 
 type
     ExpressionObject* = object
@@ -52,6 +53,9 @@ type
         of CallExpression:
             function*: Expression # Identifier or FunctionLiteral
             arguments*: seq[Expression]
+        of IndexExpression:
+            idxLeft*: Expression
+            index*: Expression
     Expression* = ref ExpressionObject
 
     StatementObject* = object
@@ -118,6 +122,11 @@ proc display*(self: Expression): string =
         result.add("(")
         result.add(self.arguments.mapIt(it.display()).join(","))
         result.add(")")
+    of IndexExpression:
+        result.add("(")
+        result.add(self.idxLeft.display())
+        result.add("[" & self.index.display() & "]")
+        result.add(")")
 
 
 proc tokenLiteral*(self: Statement): string =
@@ -165,4 +174,5 @@ type Precedence* = enum
     Sum,
     Product,
     Prefix,
-    Call
+    Call,
+    Index

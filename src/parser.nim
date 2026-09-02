@@ -27,6 +27,8 @@ proc getPrecedence(token: Token): Precedence =
         result = Product
     of LParen:
         result = Call
+    of LBracket:
+        result = Index
     else:
         result = Lowest
 
@@ -362,6 +364,26 @@ proc parseCallExpression(self: var Parser, function: Expression): Result[
 
     return ok(expression)
 
+proc parseIndex(self: var Parser): Result[Expression, string] =
+    if self.peekTokenIs(RBracket):
+        return err("invalid syntax: no index expression")
+    self.nextToken()
+    let index = ?self.parseExpression(Lowest)
+
+    if not self.expectPeek(RBracket):
+        return err("invalid syntax: expected ] but found" &
+                self.curToken.literal)
+
+    return ok(index)
+
+
+proc parseIndexExpression(self: var Parser, left: Expression): Result[
+        Expression, string] =
+    var expression = Expression(kind: IndexExpression, token: self.curToken, idxLeft: left)
+    expression.index = ?self.parseIndex()
+
+    return ok(expression)
+
 proc newParser*(lexer: Lexer): Parser =
     var parser = Parser(lexer: lexer)
 
@@ -388,6 +410,7 @@ proc newParser*(lexer: Lexer): Parser =
     parser.registerInfix(Lt, parseInfixExpression)
     parser.registerInfix(Gt, parseInfixExpression)
     parser.registerInfix(LParen, parseCallExpression)
+    parser.registerInfix(LBracket, parseIndexExpression)
 
     parser.nextToken()
     parser.nextToken()
