@@ -6,6 +6,7 @@ import std/options
 
 type ObjectType* = enum
     OInteger = "INTEGER"
+    OString = "STRING"
     OBoolean = "BOOLEAN"
     ONull = "NULL"
     OReturn = "RETURN_VALUE"
@@ -17,6 +18,8 @@ type
         case objectType*: ObjectType
         of OInteger:
             intValue*: int
+        of OString:
+            strValue*: string
         of OBoolean:
             boolValue*: bool
         of ONull:
@@ -40,6 +43,8 @@ proc inspect*(self: Object): string =
     case self.objectType:
     of OInteger:
         return $self.intValue
+    of OString:
+        return self.strValue
     of OBoolean:
         return $self.boolValue
     of ONull:
@@ -66,6 +71,8 @@ proc `==`*(a, b: Object): bool =
     case a.objectType:
     of OInteger:
         return a.intValue == b.intValue
+    of OString:
+        return a.strValue == b.strValue
     of OBoolean:
         return a.boolValue == b.boolValue
     of ONull:

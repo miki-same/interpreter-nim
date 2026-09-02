@@ -202,6 +202,25 @@ return foobar;
         check expression.kind == ExIntegerLiteral
         check expression.intValue == 5
 
+    test "parses a string literal expression statement":
+        let input = "\"hello world\";"
+
+        var lexer = newLexer(input)
+        var parser = newParser(lexer)
+        let parsed = parser.parseProgram()
+
+        if parsed.isErr:
+            checkpoint("parse error: " & parsed.error)
+        require parsed.isOk
+
+        let program = parsed.value
+        require program.statements.len == 1
+        require program.statements[0].kind == StExpression
+
+        let expression = program.statements[0].expression
+        check expression.kind == ExStringLiteral
+        check expression.strValue == "hello world"
+
     test "parses boolean literal expression statements":
         let cases = [
             (input: "true;", value: true),

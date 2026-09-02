@@ -12,6 +12,7 @@ type StatementKind* = enum
 type ExpressionKind* = enum
     ExIdentifier
     ExIntegerLiteral
+    ExStringLiteral
     ExBooleanLiteral
     ExFunctionLiteral
     PrefixExpression
@@ -27,6 +28,8 @@ type
             idValue*: string
         of ExIntegerLiteral:
             intValue*: int
+        of ExStringLiteral:
+            strValue*: string
         of ExBooleanLiteral:
             boolValue*: bool
         of ExFunctionLiteral:
@@ -74,6 +77,8 @@ proc display*(self: Expression): string =
         return self.idValue
     of ExIntegerLiteral:
         return $self.intValue
+    of ExStringLiteral:
+        return self.strValue
     of ExBooleanLiteral:
         return $self.boolValue
     of ExFunctionLiteral:

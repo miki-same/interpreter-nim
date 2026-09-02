@@ -149,6 +149,8 @@ proc parseStatement(self: var Parser): Result[Statement, string] =
             return ok(?self.parseExpressionStatement())
         of Int:
             return ok(?self.parseExpressionStatement())
+        of String:
+            return ok(?self.parseExpressionStatement())
         of Bang:
             return ok(?self.parseExpressionStatement())
         of Minus:
@@ -196,6 +198,10 @@ proc parseIdentifier(self: var Parser): Result[Expression, string] =
 proc parseIntegerLiteral(self: var Parser): Result[Expression, string] =
     return ok(Expression(kind: ExIntegerLiteral, token: self.curToken,
             intValue: self.curToken.literal.parseInt))
+
+proc parseStringLiteral(self: var Parser): Result[Expression, string] =
+    return ok(Expression(kind: ExStringLiteral, token: self.curToken,
+            strValue: self.curToken.literal))
 
 proc parseBoolean(self: var Parser): Result[Expression, string] =
     let value =
@@ -352,6 +358,7 @@ proc newParser*(lexer: Lexer): Parser =
     parser.prefixParseFns = initTable[TokenType, PrefixParseFn]()
     parser.registerPrefix(Ident, parseIdentifier)
     parser.registerPrefix(Int, parseIntegerLiteral)
+    parser.registerPrefix(String, parseStringLiteral)
     parser.registerPrefix(True, parseBoolean)
     parser.registerPrefix(False, parseBoolean)
     parser.registerPrefix(LParen, parseGroupedExpression)

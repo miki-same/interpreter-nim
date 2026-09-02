@@ -97,12 +97,26 @@ proc evalIntegerInfixExpression(operator: string, left: Object,
         return ok(newError("unknown operator: $1 $2 $3", left.getType, operator,
                 right.getType))
 
+proc evalStringInfixExpression(operator: string, left: Object,
+        right: Object): Result[Object, string] =
+    if left.getType != OString or right.getType != OString:
+        return err("invalid object type")
+
+    case operator:
+    of "+":
+        return ok(Object(objectType: OString,
+                strValue: left.strValue & right.strValue))
+    else:
+        return ok(newError("unknown operator: $1 $2 $3", left.getType, operator,
+                right.getType))
 
 proc evalInfixExpression(operator: string, left: Object, right: Object): Result[
         Object, string] =
 
     if left.getType == OInteger and right.getType == OInteger:
         return ok(?evalIntegerInfixExpression(operator, left, right))
+    if left.getType == OString and right.getType == OString:
+        return ok(?evalStringInfixExpression(operator, left, right))
     if left.getType != right.getType:
         return ok(newError("type mismatch: $1 $2 $3", left.getType, operator,
                 right.getType))
@@ -123,7 +137,7 @@ proc extendFunctionEnv(fn: Object, args: seq[Object]): Result[Environment, strin
         return err("not a function")
     var env = newEnclosedEnvironment(fn.env)
 
-    if len(fn.parameters)!=len(args):
+    if len(fn.parameters) != len(args):
         return err(fmt("need {len(fn.parameters)} parameters, but got {len(args)}"))
 
     for i, param in enumerate(fn.parameters):
@@ -144,7 +158,7 @@ proc applyFunction(fn: Object, args: seq[Object]): Result[Object, string] =
     let extendedEnvRes = extendFunctionEnv(fn, args)
     if extendedEnvRes.isErr:
         return ok(newError(extendedEnvRes.error))
-    var extendedEnv=extendedEnvRes.value
+    var extendedEnv = extendedEnvRes.value
 
     let evaluated = ?evalStatement(fn.body, extendedEnv)
     return ok(unwrapReturnValue(evaluated))
@@ -170,6 +184,8 @@ proc evalExpression(expression: Expression, env: var Environment): Result[
         return ok(newError("identifier not found:$1", expression.idValue))
     of ExIntegerLiteral:
         return ok(Object(objectType: OInteger, intValue: expression.intValue))
+    of ExStringLiteral:
+        return ok(Object(objectType: OString, strValue: expression.strValue))
     of ExBooleanLiteral:
         return ok(nativeBoolToBooleanObject(expression.boolValue))
     of ExFunctionLiteral:

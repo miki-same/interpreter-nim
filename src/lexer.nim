@@ -47,6 +47,15 @@ proc readNumber(self: var Lexer): string =
 
     return self.input[position..<self.position]
 
+proc readString(self: var Lexer): string =
+    let position = self.position
+    while self.peekChar() != '"' and self.peekChar() != '\0':
+        self.readChar()
+
+    self.readChar()
+
+    return self.input[position+1..<self.position]
+
 
 proc nextToken*(self: var Lexer): Token =
     var token: Token
@@ -90,6 +99,9 @@ proc nextToken*(self: var Lexer): Token =
             token = Token(kind: TokenType.LBrace, literal: "{")
         of '}':
             token = Token(kind: TokenType.RBrace, literal: "}")
+        of '"':
+            token.literal = self.readString()
+            token.kind = TokenType.String
         of '\0':
             token = Token(kind: TokenType.EOF, literal: "")
         else:

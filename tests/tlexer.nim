@@ -38,6 +38,45 @@ suite "Lexer.nextToken":
 
             check got.literal == ""
 
+    test "tokenizes string literals":
+        let input = "\"foobar\" \"foo bar\""
+
+        let want: seq[tuple[kind: TokenType, literal: string]] = @[
+            (String, "foobar"),
+            (String, "foo bar"),
+            (EOF, ""),
+        ]
+
+        var l = newLexer(input)
+
+        for i, expected in want:
+            let got = l.nextToken()
+            checkpoint("token[" & $i & "]")
+            check got.kind == expected.kind
+            check got.literal == expected.literal
+
+    test "tokenizes empty string literal":
+        let input = "\"\"; let a=3; let b=\"\";"
+
+        let want: seq[tuple[kind: TokenType, literal: string]] = @[
+            (String, ""), (
+                    SemiColon, ";"),
+            (Let, "let"), (Ident, "a"), (Assign, "="), (Int, "3"), (
+                    SemiColon, ";"),
+            (Let, "let"), (Ident, "b"), (Assign, "="), (String, ""), (
+                    SemiColon, ";"),
+            (EOF, ""),
+        ]
+
+        var l = newLexer(input)
+
+        for i, expected in want:
+            let got = l.nextToken()
+            checkpoint("token[" & $i & "]")
+            check got.kind == expected.kind
+            check got.literal == expected.literal
+
+
     test "tokenizes bindings, a function literal, a call and operators":
         let input = """
 let five = 5;

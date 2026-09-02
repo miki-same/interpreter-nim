@@ -40,6 +40,18 @@ suite "Evaluator.eval":
             check evaluated.objectType == OInteger
             check evaluated.intValue == testCase.expected
 
+    test "evaluates string literals to string objects":
+        let evaluated = evaluate("\"hello world\"")
+
+        check evaluated.objectType == OString
+        check evaluated.strValue == "hello world"
+
+    test "concatenates strings with the plus operator":
+        let evaluated = evaluate("\"Hello\"+\" \"+\"World!\"")
+
+        require evaluated.objectType == OString
+        check evaluated.strValue == "Hello World!"
+
     test "evaluates boolean programs to boolean objects":
         let cases = [
             (input: "true", expected: true),
@@ -256,6 +268,8 @@ suite "Evaluator.eval":
             (input: "5 + true; 5;", expected: "type mismatch: INTEGER + BOOLEAN"),
             (input: "-true", expected: "unknown operator: -BOOLEAN"),
             (input: "true + false;", expected: "unknown operator: BOOLEAN + BOOLEAN"),
+            (input: "\"Hello\" - \"World\"",
+                    expected: "unknown operator: STRING - STRING"),
             (input: "5; true + false; 5",
                     expected: "unknown operator: BOOLEAN + BOOLEAN"),
             (input: "if (10 > 1) { true + false; }",
