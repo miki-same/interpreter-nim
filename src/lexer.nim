@@ -99,6 +99,10 @@ proc nextToken*(self: var Lexer): Token =
             token = Token(kind: TokenType.LBrace, literal: "{")
         of '}':
             token = Token(kind: TokenType.RBrace, literal: "}")
+        of '[':
+            token = Token(kind: TokenType.LBracket, literal: "[")
+        of ']':
+            token = Token(kind: TokenType.RBracket, literal: "]")
         of '"':
             token.literal = self.readString()
             token.kind = TokenType.String

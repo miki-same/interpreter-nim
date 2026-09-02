@@ -233,6 +233,8 @@ proc evalExpression(expression: Expression, env: var Environment): Result[
         return ok(Object(objectType: OString, strValue: expression.strValue))
     of ExBooleanLiteral:
         return ok(nativeBoolToBooleanObject(expression.boolValue))
+    of ExArrayLiteral:
+        return err("TODO")
     of ExFunctionLiteral:
         let fn = Object(objectType: OFunction,
                 parameters: expression.parameters, body: expression.body, env: env)

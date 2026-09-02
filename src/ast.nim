@@ -14,6 +14,7 @@ type ExpressionKind* = enum
     ExIntegerLiteral
     ExStringLiteral
     ExBooleanLiteral
+    ExArrayLiteral
     ExFunctionLiteral
     PrefixExpression
     InfixExpression
@@ -32,6 +33,8 @@ type
             strValue*: string
         of ExBooleanLiteral:
             boolValue*: bool
+        of ExArrayLiteral:
+            elements*: seq[Expression]
         of ExFunctionLiteral:
             parameters*: seq[Expression]
             body*: Statement
@@ -81,6 +84,10 @@ proc display*(self: Expression): string =
         return self.strValue
     of ExBooleanLiteral:
         return $self.boolValue
+    of ExArrayLiteral:
+        result.add("[")
+        result.add(self.elements.mapIt(it.display()).join(","))
+        result.add("]")
     of ExFunctionLiteral:
         result.add(self.token.literal)
         result.add("(")

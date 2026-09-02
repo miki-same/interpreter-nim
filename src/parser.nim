@@ -165,6 +165,8 @@ proc parseStatement(self: var Parser): Result[Statement, string] =
             return ok(?self.parseExpressionStatement())
         of Function:
             return ok(?self.parseExpressionStatement())
+        of LBracket:
+            return ok(?self.parseExpressionStatement())
         else:
             return err("expected a statement, but found " & describe(self.curToken))
 
@@ -325,9 +327,10 @@ proc parseInfixExpression(self: var Parser, left: Expression): Result[
 
     return ok(expression)
 
-proc parseCallArguments(self: var Parser): Result[seq[Expression], string] =
+proc parseExpressionList(self: var Parser, endToken: TokenType): Result[seq[
+        Expression], string] =
     var arguments: seq[Expression] = @[]
-    if self.peekTokenIs(RParen):
+    if self.peekTokenIs(endToken):
         self.nextToken()
         return ok(arguments)
     self.nextToken()
@@ -338,11 +341,18 @@ proc parseCallArguments(self: var Parser): Result[seq[Expression], string] =
         self.nextToken()
         arguments.add(?self.parseExpression(Lowest))
 
-    if not self.expectPeek(RParen):
+    if not self.expectPeek(endToken):
         return err("invalid syntax: expected ) but found" &
                 self.curToken.literal)
 
     return ok(arguments)
+
+proc parseCallArguments(self: var Parser): Result[seq[Expression], string] =
+    return ok(?self.parseExpressionList(RParen))
+
+proc parseArrayLiteral(self: var Parser): Result[Expression, string] =
+    let arr = ?self.parseExpressionList(RBracket)
+    return ok(Expression(kind: ExArrayLiteral, elements: arr))
 
 proc parseCallExpression(self: var Parser, function: Expression): Result[
         Expression, string] =
@@ -366,6 +376,7 @@ proc newParser*(lexer: Lexer): Parser =
     parser.registerPrefix(Minus, parsePrefixExpression)
     parser.registerPrefix(If, parseIfExpression)
     parser.registerPrefix(Function, parseFunctionLiteral)
+    parser.registerPrefix(LBracket, parseArrayLiteral)
 
     parser.infixParseFns = initTable[TokenType, InfixParseFn]()
     parser.registerInfix(Plus, parseInfixExpression)

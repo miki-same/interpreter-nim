@@ -5,6 +5,26 @@ import ../src/lexer
 
 suite "Lexer.nextToken":
 
+    test "tokenizes an integer array literal":
+        let input = "[1,2]"
+
+        let want: seq[tuple[kind: TokenType, literal: string]] = @[
+            (LBracket, "["),
+            (Int, "1"),
+            (Comma, ","),
+            (Int, "2"),
+            (RBracket, "]"),
+            (EOF, ""),
+        ]
+
+        var l = newLexer(input)
+
+        for i, expected in want:
+            let got = l.nextToken()
+            checkpoint("token[" & $i & "]")
+            check got.kind == expected.kind
+            check got.literal == expected.literal
+
     test "tokenizes single-character operators and delimiters":
         let input = "=+(){},;"
 

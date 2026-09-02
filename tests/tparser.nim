@@ -221,6 +221,42 @@ return foobar;
         check expression.kind == ExStringLiteral
         check expression.strValue == "hello world"
 
+    test "parses an array literal with expressions":
+        let input = "[1, 2 * 2, 3 + 3]"
+
+        var lexer = newLexer(input)
+        var parser = newParser(lexer)
+        let parsed = parser.parseProgram()
+
+        if parsed.isErr:
+            checkpoint("parse error: " & parsed.error)
+        require parsed.isOk
+
+        let program = parsed.value
+        require program.statements.len == 1
+        require program.statements[0].kind == StExpression
+
+        let array = program.statements[0].expression
+        require array.kind == ExArrayLiteral
+        require array.elements.len == 3
+
+        require array.elements[0].kind == ExIntegerLiteral
+        check array.elements[0].intValue == 1
+
+        require array.elements[1].kind == InfixExpression
+        check array.elements[1].infOperator == "*"
+        require array.elements[1].infLeft.kind == ExIntegerLiteral
+        check array.elements[1].infLeft.intValue == 2
+        require array.elements[1].infRight.kind == ExIntegerLiteral
+        check array.elements[1].infRight.intValue == 2
+
+        require array.elements[2].kind == InfixExpression
+        check array.elements[2].infOperator == "+"
+        require array.elements[2].infLeft.kind == ExIntegerLiteral
+        check array.elements[2].infLeft.intValue == 3
+        require array.elements[2].infRight.kind == ExIntegerLiteral
+        check array.elements[2].infRight.intValue == 3
+
     test "parses boolean literal expression statements":
         let cases = [
             (input: "true;", value: true),
