@@ -82,6 +82,37 @@ suite "Evaluator.eval":
             require evaluated.objectType == OError
             check evaluated.errorMessage == testCase.expected
 
+    test "evaluates the built-in str function":
+        let cases = [
+            (input: "str(123)", expected: "123"),
+            (input: "str(true)", expected: "true"),
+            (input: "str(false)", expected: "false"),
+            (input: "str(if (false) { 1 })", expected: "null"),
+            (input: "str(\"abc\")", expected: "abc"),
+        ]
+
+        for testCase in cases:
+            checkpoint("input: " & testCase.input)
+
+            let evaluated = evaluate(testCase.input)
+
+            require evaluated.objectType == OString
+            check evaluated.strValue == testCase.expected
+
+    test "returns an error when str does not support the argument type":
+        let evaluated = evaluate("str(fn(x) { x })")
+
+        require evaluated.objectType == OError
+        check evaluated.errorMessage ==
+                "argument to `str` not supported, got FUNCTION"
+
+    test "returns an error when str receives two arguments":
+        let evaluated = evaluate("str(\"one\", \"two\")")
+
+        require evaluated.objectType == OError
+        check evaluated.errorMessage ==
+                "wrong number of arguments. got=2, want=1"
+
     test "evaluates boolean programs to boolean objects":
         let cases = [
             (input: "true", expected: true),

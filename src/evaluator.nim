@@ -38,6 +38,25 @@ let builtins = {
         return Object(objectType: OInteger, intValue: len(arg.strValue))
     else:
         return newError("argument to `len` not supported, got $1", arg.getType())
+    ),
+    "str": Object(objectType: OBuiltIn, fn: proc (args: varargs[
+            Object]): Object =
+    if len(args) != 1:
+        return newError("wrong number of arguments. got=$1, want=$2", len(args), 1)
+    let arg = args[0]
+
+    case arg.getType():
+    of OString:
+        return Object(objectType: OString, strValue: arg.strValue)
+    of OInteger:
+        return Object(objectType: OString, strValue: $arg.intValue)
+    of OBoolean:
+        let s = if(arg.boolValue): "true" else: "false"
+        return Object(objectType: OString, strValue: s)
+    of ONull:
+        return Object(objectType: OString, strValue: "null")
+    else:
+        return newError("argument to `str` not supported, got $1", arg.getType())
     )
 }.toTable
 
