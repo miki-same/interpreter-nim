@@ -20,6 +20,7 @@ type TokenType* = enum
     RBrace = "}",
     LBracket = "[",
     RBracket = "]",
+    Colon = ":",
     Function = "FUNCTION",
     Let = "LET",
     True = "TRUE",

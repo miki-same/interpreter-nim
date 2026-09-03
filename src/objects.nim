@@ -3,19 +3,26 @@ import std/strutils
 import std/sequtils
 import std/tables
 import std/options
-
-type ObjectType* = enum
-    OInteger = "INTEGER"
-    OString = "STRING"
-    OBoolean = "BOOLEAN"
-    ONull = "NULL"
-    OReturn = "RETURN_VALUE"
-    OFunction = "FUNCTION"
-    OBuiltIn = "BUILTIN"
-    OArray = "ARRAY"
-    OError = "ERROR"
+import std/hashes
 
 type
+    ObjectType* = enum
+        OInteger = "INTEGER"
+        OString = "STRING"
+        OBoolean = "BOOLEAN"
+        ONull = "NULL"
+        OReturn = "RETURN_VALUE"
+        OFunction = "FUNCTION"
+        OBuiltIn = "BUILTIN"
+        OArray = "ARRAY"
+        OHash = "HASH"
+        OError = "ERROR"
+
+    HashPairObj = object
+        key*: Object
+        value*: Object
+    HashPair* = ref HashPairObj
+
     ObjectObj* = object
         case objectType*: ObjectType
         of OInteger:
@@ -36,6 +43,8 @@ type
             fn*: BuiltInFunction
         of OArray:
             elements*: seq[Object]
+        of OHash:
+            pairs*: Table[Hash, HashPair]
         of OError:
             errorMessage*: string
     Object* = ref ObjectObj
@@ -72,6 +81,13 @@ proc inspect*(self: Object): string =
         result.add("[")
         result.add(self.elements.mapIt(it.inspect()).join(","))
         result.add("]")
+    of OHash:
+        var pairs: seq[string] = @[]
+        for key, value in self.pairs:
+            pairs.add(value.key.inspect() & ":" & value.value.inspect())
+        result.add("{")
+        result.add(pairs.join(","))
+        result.add("}")
     of OError:
         return "ERROR: " & self.errorMessage
 
@@ -105,8 +121,32 @@ proc `==`*(a, b: Object): bool =
             if a.elements[i] != b.elements[i]:
                 return false
         return true
+    of OHash:
+        if len(a.pairs) != len(b.pairs):
+            return false
+        for key, value in a.pairs:
+            if not key in b.pairs:
+                return false
+            let x = b.pairs[key]
+            if b.pairs[key].key != a.pairs[key].key or b.pairs[key].value !=
+                    a.pairs[key].value:
+                return false
+        return true
+
     of OError:
         return a.errorMessage == b.errorMessage
+
+proc hash*(self: Object): Hash =
+    case self.getType():
+    of OBoolean:
+        result = hash(self.boolValue) !& hash($self.getType())
+    of OInteger:
+        result = hash(self.intValue) !& hash($self.getType())
+    of OString:
+        result = hash(self.strValue) !& hash($self.getType())
+    else:
+        raise newException(ValueError, "unhashable object")
+
 
 proc get*(self: Environment, name: string): Option[Object] =
     if name in self.store:

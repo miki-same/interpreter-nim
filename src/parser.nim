@@ -169,6 +169,8 @@ proc parseStatement(self: var Parser): Result[Statement, string] =
             return ok(?self.parseExpressionStatement())
         of LBracket:
             return ok(?self.parseExpressionStatement())
+        of LBrace:
+            return ok(?self.parseExpressionStatement())
         else:
             return err("expected a statement, but found " & describe(self.curToken))
 
@@ -356,6 +358,30 @@ proc parseArrayLiteral(self: var Parser): Result[Expression, string] =
     let arr = ?self.parseExpressionList(RBracket)
     return ok(Expression(kind: ExArrayLiteral, elements: arr))
 
+proc parseHashLiteral(self: var Parser): Result[Expression, string] =
+    var pairs: seq[tuple[key: Expression, value: Expression]] = @[]
+
+    while not self.peekTokenIs(RBrace):
+        self.nextToken()
+        let key = ?self.parseExpression(Lowest)
+        if not self.expectPeek(Colon):
+            return err("invalid syntax: expected : but found" &
+                    self.curToken.literal)
+        self.nextToken()
+        let value = ?self.parseExpression(Lowest)
+
+        pairs.add((key: key, value: value))
+
+        if (not self.peekTokenIs(RBrace)) and (not self.expectPeek(Comma)):
+            return err("invalid syntax: expected , or } but found" &
+                    self.curToken.literal)
+
+    if not self.expectPeek(RBrace):
+        return err("invalid syntax: expected } but found" &
+                    self.curToken.literal)
+
+    return ok(Expression(kind: ExHashLiteral, pairs: pairs))
+
 proc parseCallExpression(self: var Parser, function: Expression): Result[
         Expression, string] =
     var expression = Expression(kind: CallExpression, token: self.curToken,
@@ -399,6 +425,7 @@ proc newParser*(lexer: Lexer): Parser =
     parser.registerPrefix(If, parseIfExpression)
     parser.registerPrefix(Function, parseFunctionLiteral)
     parser.registerPrefix(LBracket, parseArrayLiteral)
+    parser.registerPrefix(LBrace, parseHashLiteral)
 
     parser.infixParseFns = initTable[TokenType, InfixParseFn]()
     parser.registerInfix(Plus, parseInfixExpression)

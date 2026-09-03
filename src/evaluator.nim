@@ -5,6 +5,7 @@ import std/strutils
 import std/strformat
 import std/enumerate
 import std/tables
+import std/hashes
 import results
 export results
 
@@ -300,6 +301,27 @@ proc evalExpressions(exps: seq[Expression], env: var Environment): Result[seq[
         values.add(evaluated)
     return ok(values)
 
+proc evalHashLiteral(hmap: Expression, env: var Environment): Result[Object, string] =
+    var pairs = initTable[Hash, HashPair]()
+
+    for (keyExp, valueExp) in hmap.pairs:
+        let key = ?evalExpression(keyExp, env)
+        if isError(key):
+            return ok(key)
+
+        let value = ?evalExpression(valueExp, env)
+        if isError(value):
+            return ok(value)
+
+        try:
+            let hashed = hash(key)
+            pairs[hashed] = HashPair(key: key, value: value)
+        except:
+            return ok(newError("invalid type key"))
+
+    return ok(Object(objectType: OHash, pairs: pairs))
+
+
 proc evalExpression(expression: Expression, env: var Environment): Result[
         Object, string] =
     case expression.kind:
@@ -324,6 +346,8 @@ proc evalExpression(expression: Expression, env: var Environment): Result[
             return ok(elements[0])
 
         return ok(Object(objectType: OArray, elements: elements))
+    of ExHashLiteral:
+        return ok(?evalHashLiteral(expression, env))
     of ExFunctionLiteral:
         let fn = Object(objectType: OFunction,
                 parameters: expression.parameters, body: expression.body, env: env)

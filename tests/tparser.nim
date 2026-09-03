@@ -1,4 +1,4 @@
-import std/[options, unittest]
+import std/[options, tables, unittest]
 
 import ../src/lexer
 import ../src/parser
@@ -256,6 +256,51 @@ return foobar;
         check array.elements[2].infLeft.intValue == 3
         require array.elements[2].infRight.kind == ExIntegerLiteral
         check array.elements[2].infRight.intValue == 3
+
+    test "parses a hash literal with string keys and integer values":
+        let input = "{\"one\":1,\"two\":2,\"three\":3}"
+        let want = {"one": 1, "two": 2, "three": 3}.toTable
+
+        var lexer = newLexer(input)
+        var parser = newParser(lexer)
+        let parsed = parser.parseProgram()
+
+        if parsed.isErr:
+            checkpoint("parse error: " & parsed.error)
+        require parsed.isOk
+
+        let program = parsed.value
+        require program.statements.len == 1
+        require program.statements[0].kind == StExpression
+
+        let hash = program.statements[0].expression
+        require hash.kind == ExHashLiteral
+        require hash.pairs.len == want.len
+
+        for (key, value) in hash.pairs:
+            require key.kind == ExStringLiteral
+            require key.strValue in want
+            require value.kind == ExIntegerLiteral
+            check value.intValue == want[key.strValue]
+
+    test "parses an empty hash literal":
+        let input = "{}"
+
+        var lexer = newLexer(input)
+        var parser = newParser(lexer)
+        let parsed = parser.parseProgram()
+
+        if parsed.isErr:
+            checkpoint("parse error: " & parsed.error)
+        require parsed.isOk
+
+        let program = parsed.value
+        require program.statements.len == 1
+        require program.statements[0].kind == StExpression
+
+        let hash = program.statements[0].expression
+        require hash.kind == ExHashLiteral
+        check hash.pairs.len == 0
 
     test "parses an index expression":
         let input = "myArray[1 + 1];"

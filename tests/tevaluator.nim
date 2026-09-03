@@ -1,4 +1,4 @@
-import std/unittest
+import std/[tables, unittest]
 
 import ../src/ast
 import ../src/lexer
@@ -87,6 +87,41 @@ suite "Evaluator.eval":
 
         check evaluated.objectType == OString
         check evaluated.strValue == "hello world"
+
+    test "evaluates hash literals":
+        let input = """
+let two = "two";
+{
+    "one": 10 - 9,
+    two: 1 + 1,
+    "thr" + "ee": 6 / 2,
+    4: 4,
+    true: 5,
+    false: 6
+}
+"""
+        let expected = [
+            (key: Object(objectType: OString, strValue: "one"), value: 1),
+            (key: Object(objectType: OString, strValue: "two"), value: 2),
+            (key: Object(objectType: OString, strValue: "three"), value: 3),
+            (key: Object(objectType: OInteger, intValue: 4), value: 4),
+            (key: Object(objectType: OBoolean, boolValue: true), value: 5),
+            (key: Object(objectType: OBoolean, boolValue: false), value: 6),
+        ]
+
+        let evaluated = evaluate(input)
+
+        require evaluated.objectType == OHash
+        require evaluated.pairs.len == expected.len
+
+        for testCase in expected:
+            checkpoint("key: " & testCase.key.inspect())
+            let keyHash = hash(testCase.key)
+            require keyHash in evaluated.pairs
+
+            let pair = evaluated.pairs[keyHash]
+            require pair.value.objectType == OInteger
+            check pair.value.intValue == testCase.value
 
     test "concatenates strings with the plus operator":
         let evaluated = evaluate("\"Hello\"+\" \"+\"World!\"")

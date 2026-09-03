@@ -5,6 +5,26 @@ import ../src/lexer
 
 suite "Lexer.nextToken":
 
+    test "tokenizes a string hash literal":
+        let input = "{\"foo\":\"bar\"}"
+
+        let want: seq[tuple[kind: TokenType, literal: string]] = @[
+            (LBrace, "{"),
+            (String, "foo"),
+            (Colon, ":"),
+            (String, "bar"),
+            (RBrace, "}"),
+            (EOF, ""),
+        ]
+
+        var l = newLexer(input)
+
+        for i, expected in want:
+            let got = l.nextToken()
+            checkpoint("token[" & $i & "]")
+            check got.kind == expected.kind
+            check got.literal == expected.literal
+
     test "tokenizes an integer array literal":
         let input = "[1,2]"
 
