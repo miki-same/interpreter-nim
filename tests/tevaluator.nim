@@ -117,9 +117,9 @@ let two = "two";
         for testCase in expected:
             checkpoint("key: " & testCase.key.inspect())
             let keyHash = hash(testCase.key)
-            require keyHash in evaluated.pairs
+            require testCase.key in evaluated.pairs
 
-            let pair = evaluated.pairs[keyHash]
+            let pair = evaluated.pairs[testCase.key]
             require pair.value.objectType == OInteger
             check pair.value.intValue == testCase.value
 

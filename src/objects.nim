@@ -44,7 +44,7 @@ type
         of OArray:
             elements*: seq[Object]
         of OHash:
-            pairs*: Table[Hash, HashPair]
+            pairs*: Table[Object, HashPair]
         of OError:
             errorMessage*: string
     Object* = ref ObjectObj
@@ -94,6 +94,18 @@ proc inspect*(self: Object): string =
 proc getType*(self: Object): ObjectType =
     return self.objectType
 
+proc hash*(self: Object): Hash =
+    case self.getType():
+    of OBoolean:
+        result = hash(self.boolValue) !& hash($self.getType())
+    of OInteger:
+        result = hash(self.intValue) !& hash($self.getType())
+    of OString:
+        result = hash(self.strValue) !& hash($self.getType())
+    else:
+        raise newException(ValueError, "unhashable object")
+
+
 proc `==`*(a, b: Object): bool =
     if a.getType() != b.getType():
         return false
@@ -125,7 +137,7 @@ proc `==`*(a, b: Object): bool =
         if len(a.pairs) != len(b.pairs):
             return false
         for key, value in a.pairs:
-            if not key in b.pairs:
+            if key notin b.pairs:
                 return false
             let x = b.pairs[key]
             if b.pairs[key].key != a.pairs[key].key or b.pairs[key].value !=
@@ -135,17 +147,6 @@ proc `==`*(a, b: Object): bool =
 
     of OError:
         return a.errorMessage == b.errorMessage
-
-proc hash*(self: Object): Hash =
-    case self.getType():
-    of OBoolean:
-        result = hash(self.boolValue) !& hash($self.getType())
-    of OInteger:
-        result = hash(self.intValue) !& hash($self.getType())
-    of OString:
-        result = hash(self.strValue) !& hash($self.getType())
-    else:
-        raise newException(ValueError, "unhashable object")
 
 
 proc get*(self: Environment, name: string): Option[Object] =

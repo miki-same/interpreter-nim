@@ -308,7 +308,7 @@ proc evalExpressions(exps: seq[Expression], env: var Environment): Result[seq[
     return ok(values)
 
 proc evalHashLiteral(hmap: Expression, env: var Environment): Result[Object, string] =
-    var pairs = initTable[Hash, HashPair]()
+    var pairs = initTable[Object, HashPair]()
 
     for (keyExp, valueExp) in hmap.pairs:
         let key = ?evalExpression(keyExp, env)
@@ -320,8 +320,7 @@ proc evalHashLiteral(hmap: Expression, env: var Environment): Result[Object, str
             return ok(value)
 
         try:
-            let hashed = hash(key)
-            pairs[hashed] = HashPair(key: key, value: value)
+            pairs[key] = HashPair(key: key, value: value)
         except:
             return ok(newError("invalid type key"))
 
@@ -418,12 +417,10 @@ proc evalExpression(expression: Expression, env: var Environment): Result[
                 return ok(newError("argument for index not supported, got $1",
                         index.getType()))
 
-            let hashed = hash(index)
-
-            if hashed notin left.pairs:
+            if index notin left.pairs:
                 return ok(NULL)
 
-            return ok(left.pairs[hashed].value)
+            return ok(left.pairs[index].value)
 
         else:
             return ok(newError("argument for index not supported, got $1",
