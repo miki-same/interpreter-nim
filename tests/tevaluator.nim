@@ -123,6 +123,57 @@ let two = "two";
             require pair.value.objectType == OInteger
             check pair.value.intValue == testCase.value
 
+    test "evaluate hash index integer":
+        let cases = [
+            (input: "{\"foo\": 5}[\"foo\"]", expected: 5),
+            (input: "{true: 5, false: 3}[true]", expected: 5),
+            (input: "{5: 5, 3: 3}[5]", expected: 5)
+        ]
+        for testCase in cases:
+            checkpoint("input: " & testCase.input)
+
+            let evaluated = evaluate(testCase.input)
+            require evaluated.objectType == OInteger
+            check evaluated.intValue == testCase.expected
+
+    test "evaluate hash index boolean":
+        let cases = [
+            (input: "{\"foo\": true}[\"foo\"]", expected: true),
+            (input: "{true: true, false: false}[true]", expected: true),
+            (input: "{5: true, 3: false}[5]", expected: true)
+        ]
+        for testCase in cases:
+            checkpoint("input: " & testCase.input)
+
+            let evaluated = evaluate(testCase.input)
+            require evaluated.objectType == OBoolean
+            check evaluated.boolValue == testCase.expected
+
+    test "evaluate hash index string":
+        let cases = [
+            (input: "{\"foo\": \"bar\"}[\"foo\"]", expected: "bar"),
+            (input: "{true: \"bar\", false: \"hoge\"}[true]", expected: "bar"),
+            (input: "{5:  \"bar\", 3: \"hoge\"}[5]", expected: "bar")
+        ]
+        for testCase in cases:
+            checkpoint("input: " & testCase.input)
+
+            let evaluated = evaluate(testCase.input)
+            require evaluated.objectType == OString
+            check evaluated.strValue == testCase.expected
+
+    test "evaluate hash index null":
+        let cases = [
+            (input: "{\"foo\": \"bar\"}[\"fuga\"]"),
+            (input: "{true: \"bar\", false: \"hoge\"}[3]"),
+            (input: "{5: true, 3: false}[true]")
+        ]
+        for testCase in cases:
+            checkpoint("input: " & testCase.input)
+
+            let evaluated = evaluate(testCase.input)
+            require evaluated.objectType == ONull
+
     test "concatenates strings with the plus operator":
         let evaluated = evaluate("\"Hello\"+\" \"+\"World!\"")
 

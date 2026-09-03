@@ -391,21 +391,37 @@ proc evalExpression(expression: Expression, env: var Environment): Result[
 
         return ok(res)
     of IndexExpression:
-        let arr = ?evalExpression(expression.idxLeft, env)
-        if isError(arr):
-            return ok(arr)
-        if arr.getType() != OArray:
-            return ok(newError("argument for index not supported, got $1",
-                    arr.getType()))
+        let left = ?evalExpression(expression.idxLeft, env)
+        if isError(left):
+            return ok(left)
+        case left.getType():
+        of OArray:
+            let index = ?evalExpression(expression.index, env)
+            if isError(index):
+                return ok(index)
+            if index.getType() != OInteger:
+                return ok(newError("argument for index not supported, got $1",
+                        index.getType()))
 
-        let index = ?evalExpression(expression.index, env)
-        if isError(index):
-            return ok(index)
-        if index.getType() != OInteger:
-            return ok(newError("argument for index not supported, got $1",
-                    index.getType()))
+            return ok(?applyIndex(left, index))
+        of OHash:
+            let index = ?evalExpression(expression.index, env)
+            if isError(index):
+                return ok(index)
+            if not (index.getType() in [OInteger, OString, OBoolean]):
+                return ok(newError("argument for index not supported, got $1",
+                        index.getType()))
 
-        return ok(?applyIndex(arr, index))
+            let hashed = hash(index)
+
+            if hashed notin left.pairs:
+                return ok(NULL)
+
+            return ok(left.pairs[hashed].value)
+
+        else:
+            return ok(newError("argument for index not supported, got $1",
+                left.getType()))
 
 proc evalBlockStatement(statement: Statement, env: var Environment): Result[
         Object, string] =
