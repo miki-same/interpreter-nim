@@ -125,6 +125,11 @@ let
         else:
             return newError("argument 1 to `push` not supported, got $1",
                     arr.getType())
+    builtinPuts: proc (args: varargs[Object]): Object = proc(args: varargs[
+            Object]): Object =
+        for arg in args:
+            echo arg.inspect()
+        return NULL
 
 let builtins = {
     "len": Object(objectType: OBuiltIn, fn: builtinLen),
@@ -132,7 +137,8 @@ let builtins = {
     "first": Object(objectType: OBuiltIn, fn: builtinFirst),
     "last": Object(objectType: OBuiltIn, fn: builtinLast),
     "rest": Object(objectType: OBuiltIn, fn: builtinRest),
-    "push": Object(objectType: OBuiltIn, fn: builtinPush)
+    "push": Object(objectType: OBuiltIn, fn: builtinPush),
+    "puts": Object(objectType: OBuiltin, fn: builtinPuts)
 }.toTable
 
 
